@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Header } from '@/src/components/layout/Header';
 import { Trophy, Medal, Target, Flame, Users, Star, Clock, Calendar } from 'lucide-react';
-import { User } from '@/src/types';
 import { useCompetitionData } from '@/src/hooks/useHealthData';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 export default function CompetitionPage() {
-  const [selectedUser, setSelectedUser] = useState<User>('Bob');
+  const { selectedUser, setSelectedUser } = useTheme();
   const competitionData = useCompetitionData();
 
   return (

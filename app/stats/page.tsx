@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { User, DailyEntry } from '@/src/types';
 import { useHealthData } from '@/src/hooks/useHealthData';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { cn } from '@/src/lib/utils';
 
 // Generate all days in the challenge period
@@ -172,14 +173,14 @@ function DayDetailModal({ date, dayNumber, entry, onClose, onEdit }: DayDetailMo
 }
 
 export default function EnhancedStatsPage() {
-  const [selectedUser, setSelectedUser] = useState<User>('Bob');
+  const { selectedUser, setSelectedUser } = useTheme();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [filterLevel, setFilterLevel] = useState<'all' | 'weak' | 'average' | 'good' | 'excellent'>('all');
 
   const { recentEntries } = useHealthData(selectedUser);
 
-  // Generate mock data for demonstration - replace with real data
+  // Generate all challenge days (real dates, no mock data)
   const challengeDays = useMemo(() => generateChallengeDays(), []);
 
   // Create a map of date to entry for quick lookup
@@ -189,36 +190,7 @@ export default function EnhancedStatsPage() {
       map.set(entry.date, entry);
     });
 
-    // Add mock data for demonstration
-    challengeDays.forEach((date, index) => {
-      const dateStr = date.toISOString().split('T')[0];
-      if (!map.has(dateStr) && Math.random() > 0.3) {
-        const points = Math.floor(Math.random() * 17);
-        map.set(dateStr, {
-          id: `mock-${index}`,
-          date: dateStr,
-          user: selectedUser,
-          checklist: {
-            noSugar: points > 0,
-            noAlcohol: points > 1,
-            fastingTime: points > 5 ? '17:00' : '',
-            fastingPoints: points > 5 ? 3 : 0,
-            training: points > 7,
-            morningRoutine: points > 10,
-            sauna: false,
-            steps10k: points > 3,
-            supplements: points > 2,
-            weighedIn: points > 4,
-            caloriesTracked: points > 6,
-          },
-          dailyPoints: points,
-          bonusPoints: index > 3 ? 1 : 0,
-          totalPoints: points + (index > 3 ? 1 : 0),
-          streak: Math.min(index + 1, 7),
-          notes: ''
-        });
-      }
-    });
+    // Only use real database entries - NO MOCK DATA
 
     return map;
   }, [recentEntries, challengeDays, selectedUser]);
@@ -407,20 +379,109 @@ export default function EnhancedStatsPage() {
                   <div
                     key={dateStr}
                     className={cn(
-                      'aspect-square rounded cursor-pointer transition-all hover:scale-110 hover:z-10 relative group',
+                      'aspect-square rounded cursor-pointer transition-all hover:scale-110 hover:z-10 relative group p-0.5',
                       isWeekend && 'ring-1 ring-gray-400 dark:ring-gray-600'
                     )}
                     style={{ backgroundColor: entry ? getPointColor(points) : '#1F2937' }}
                     onClick={() => handleDayClick(date)}
                   >
+                    {/* Mini-pixels showing completion status */}
+                    {entry && (
+                      <div className="w-full h-full grid grid-cols-4 gap-0.5">
+                        {/* Diet category - top left */}
+                        <div className={cn(
+                          'rounded-sm',
+                          (entry.checklist.noSugar && entry.checklist.noAlcohol && entry.checklist.caloriesTracked)
+                            ? 'bg-green-400'
+                            : (entry.checklist.noSugar || entry.checklist.noAlcohol || entry.checklist.caloriesTracked)
+                            ? 'bg-yellow-400'
+                            : 'bg-red-400'
+                        )} />
+
+                        {/* Activity category - top right */}
+                        <div className={cn(
+                          'rounded-sm',
+                          (entry.checklist.training && entry.checklist.steps10k)
+                            ? 'bg-green-400'
+                            : (entry.checklist.training || entry.checklist.steps10k)
+                            ? 'bg-yellow-400'
+                            : 'bg-red-400'
+                        )} />
+
+                        {/* Routine category - bottom left */}
+                        <div className={cn(
+                          'rounded-sm',
+                          (entry.checklist.morningRoutine && entry.checklist.supplements && entry.checklist.weighedIn)
+                            ? 'bg-green-400'
+                            : (entry.checklist.morningRoutine || entry.checklist.supplements || entry.checklist.weighedIn)
+                            ? 'bg-yellow-400'
+                            : 'bg-red-400'
+                        )} />
+
+                        {/* Bonus category - bottom right */}
+                        <div className={cn(
+                          'rounded-sm',
+                          entry.checklist.sauna
+                            ? 'bg-purple-400'
+                            : entry.streak > 3
+                            ? 'bg-orange-400'
+                            : 'bg-gray-400'
+                        )} />
+                      </div>
+                    )}
+
+                    {/* Day number overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-white text-xs font-bold drop-shadow-md">
+                        {dayNumber}
+                      </span>
+                    </div>
+
                     {/* Hover tooltip */}
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-20">
-                      Day {dayNumber}: {entry ? `${points} pts` : 'No data'}
-                      {entry?.streak ? `, ${entry.streak} streak` : ''}
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-20">
+                      <div className="text-center">
+                        <div className="font-bold">Day {dayNumber}</div>
+                        <div>{entry ? `${points} pts` : 'No data'}</div>
+                        {entry?.streak ? <div>{entry.streak} day streak</div> : null}
+                        {entry && (
+                          <div className="mt-1 text-left">
+                            <div className="text-green-400">🟢 Diet: {[entry.checklist.noSugar, entry.checklist.noAlcohol, entry.checklist.caloriesTracked].filter(Boolean).length}/3</div>
+                            <div className="text-blue-400">🔵 Activity: {[entry.checklist.training, entry.checklist.steps10k].filter(Boolean).length}/2</div>
+                            <div className="text-yellow-400">🟡 Routine: {[entry.checklist.morningRoutine, entry.checklist.supplements, entry.checklist.weighedIn].filter(Boolean).length}/3</div>
+                            <div className="text-purple-400">🟣 Bonus: {entry.checklist.sauna ? 'Sauna' : entry.streak > 3 ? 'Streak' : 'None'}</div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
               })}
+            </div>
+
+            {/* Mini-pixels Legend */}
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <h4 className="text-sm font-medium mb-3">Mini-pixel Legend:</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 bg-green-400 rounded-sm"></div>
+                  <span>Diet Complete</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 bg-blue-400 rounded-sm"></div>
+                  <span>Activity Complete</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 bg-yellow-400 rounded-sm"></div>
+                  <span>Routine Complete</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 bg-purple-400 rounded-sm"></div>
+                  <span>Bonus (Sauna/Streak)</span>
+                </div>
+              </div>
+              <div className="mt-2 text-xs text-muted-foreground">
+                Each day shows 4 mini-pixels: 🟢 Green = All tasks done, 🟡 Yellow = Some tasks done, 🔴 Red = Tasks missing
+              </div>
             </div>
           </div>
 

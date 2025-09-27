@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, CheckSquare, Trophy, BarChart3, Settings } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 const navigation = [
   {
@@ -40,6 +41,7 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { theme } = useTheme();
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
@@ -56,7 +58,7 @@ export function Sidebar() {
                 className={cn(
                   'group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors',
                   isActive
-                    ? 'bg-primary text-white'
+                    ? `${theme.background} text-white`
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 )}
               >

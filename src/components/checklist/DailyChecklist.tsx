@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Check, Clock, Flame } from 'lucide-react';
+import { Check, Clock, Flame, Edit3 } from 'lucide-react';
 import { cn, calculateDailyPoints, calculateBonusPoints, getSuccessLevel } from '@/src/lib/utils';
 import { User, DailyEntry } from '@/src/types';
 import { useHealthData } from '@/src/hooks/useHealthData';
+import { useHealthMetrics } from '@/src/hooks/useHealthMetrics';
 
 interface ChecklistItemProps {
   label: string;
@@ -13,18 +14,34 @@ interface ChecklistItemProps {
   onChange: (checked: boolean) => void;
   description?: string;
   icon?: React.ReactNode;
+  readonly?: boolean;
 }
 
-function ChecklistItem({ label, points, checked, onChange, description, icon }: ChecklistItemProps) {
+interface TextInputChecklistItemProps {
+  label: string;
+  points: number;
+  value: string;
+  onValueChange: (value: string) => void;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  description?: string;
+  icon?: React.ReactNode;
+  placeholder?: string;
+}
+
+function ChecklistItem({ label, points, checked, onChange, description, icon, readonly = false }: ChecklistItemProps) {
   return (
     <div
       className={cn(
-        'flex items-center justify-between p-4 rounded-lg border-2 transition-all cursor-pointer',
+        'flex items-center justify-between p-4 rounded-lg border-2 transition-all',
+        readonly ? 'cursor-default' : 'cursor-pointer',
         checked
           ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
-          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700',
+        !readonly && !checked && 'hover:border-gray-300 dark:hover:border-gray-600',
+        readonly && 'opacity-75'
       )}
-      onClick={() => onChange(!checked)}
+      onClick={() => !readonly && onChange(!checked)}
     >
       <div className="flex items-center space-x-3">
         <div
@@ -58,6 +75,76 @@ function ChecklistItem({ label, points, checked, onChange, description, icon }: 
         )}>
           {points} {points === 1 ? 'pkt' : 'pkt'}
         </span>
+      </div>
+    </div>
+  );
+}
+
+function TextInputChecklistItem({
+  label,
+  points,
+  value,
+  onValueChange,
+  checked,
+  onChange,
+  description,
+  icon,
+  placeholder
+}: TextInputChecklistItemProps) {
+  return (
+    <div
+      className={cn(
+        'p-4 rounded-lg border-2 transition-all',
+        checked
+          ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+      )}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-3">
+          <div
+            className={cn(
+              'w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer',
+              checked
+                ? 'bg-green-500 border-green-500'
+                : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600'
+            )}
+            onClick={() => onChange(!checked)}
+          >
+            {checked && <Check className="w-4 h-4 text-white" />}
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              {icon && <span className="text-lg">{icon}</span>}
+              <span className={cn('font-medium', checked && 'text-green-700 dark:text-green-400')}>
+                {label}
+              </span>
+            </div>
+            {description && (
+              <p className="text-xs text-muted-foreground mt-1">{description}</p>
+            )}
+          </div>
+        </div>
+        <span className={cn(
+          'px-2 py-1 rounded-full text-xs font-bold',
+          checked
+            ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+        )}>
+          {points} {points === 1 ? 'pkt' : 'pkt'}
+        </span>
+      </div>
+      <div className="ml-9">
+        <div className="flex items-center space-x-2">
+          <Edit3 className="w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onValueChange(e.target.value)}
+            placeholder={placeholder}
+            className="flex-1 px-3 py-2 rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
       </div>
     </div>
   );
@@ -121,8 +208,9 @@ interface DailyChecklistProps {
 }
 
 export function DailyChecklist({ user, date = new Date(), onSave }: DailyChecklistProps) {
-  // Load user-specific data
+  // Load user-specific data and health metrics
   const { todayEntry, streak, isLoading } = useHealthData(user);
+  const healthMetrics = useHealthMetrics(user);
 
   const [checklist, setChecklist] = useState({
     noSugar: false,
@@ -130,12 +218,14 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
     fastingTime: '',
     fastingPoints: 0,
     training: false,
+    trainingDescription: '',
     morningRoutine: false,
     sauna: false,
     steps10k: false,
     supplements: false,
     weighedIn: false,
     caloriesTracked: false,
+    caloriesDescription: '',
   });
 
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
@@ -147,7 +237,9 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
       // Load existing data for this user
       setChecklist({
         ...todayEntry.checklist,
-        fastingTime: todayEntry.checklist.fastingTime || ''
+        fastingTime: todayEntry.checklist.fastingTime || '',
+        trainingDescription: todayEntry.checklist.trainingDescription || '',
+        caloriesDescription: todayEntry.checklist.caloriesDescription || ''
       });
     } else {
       // Reset to empty state for new user or no data
@@ -157,15 +249,30 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
         fastingTime: '',
         fastingPoints: 0,
         training: false,
+        trainingDescription: '',
         morningRoutine: false,
         sauna: false,
         steps10k: false,
         supplements: false,
         weighedIn: false,
         caloriesTracked: false,
+        caloriesDescription: '',
       });
     }
   }, [user, todayEntry]);
+
+  // Auto-populate health metrics (steps and weight) from database
+  useEffect(() => {
+    if (!healthMetrics.isLoading && !healthMetrics.error) {
+      setChecklist(prev => ({
+        ...prev,
+        // Auto-check steps if >= 10k from health_metrics
+        steps10k: healthMetrics.steps.value >= 10000,
+        // Auto-check weight if data exists in health_metrics
+        weighedIn: healthMetrics.weight.value > 0
+      }));
+    }
+  }, [healthMetrics]);
   const dailyPoints = calculateDailyPoints(checklist);
   const bonusPoints = calculateBonusPoints(dailyPoints, streak);
   const totalPoints = dailyPoints + bonusPoints;
@@ -290,34 +397,43 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
             onChange={(value) => handleChecklistChange('fastingTime', value)}
             onPointsChange={(points) => handleChecklistChange('fastingPoints', points)}
           />
-          <ChecklistItem
+          <TextInputChecklistItem
             label="Spisane kalorie"
             points={2}
+            value={checklist.caloriesDescription}
+            onValueChange={(value) => handleChecklistChange('caloriesDescription', value)}
             checked={checklist.caloriesTracked}
             onChange={(checked) => handleChecklistChange('caloriesTracked', checked)}
             description="Wszystkie posiłki zapisane w aplikacji"
             icon="📝"
+            placeholder="np. 1850 kcal, 150g białka, 200g węglowodanów..."
           />
         </div>
 
         {/* Training & Activity */}
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-muted-foreground">Aktywność</h4>
-          <ChecklistItem
+          <TextInputChecklistItem
             label="Zrobiony trening"
             points={2}
+            value={checklist.trainingDescription}
+            onValueChange={(value) => handleChecklistChange('trainingDescription', value)}
             checked={checklist.training}
             onChange={(checked) => handleChecklistChange('training', checked)}
             description="Bieganie, boks, EMS lub konie"
             icon="💪"
+            placeholder="np. Bieg 5km, Boks 45min, EMS full body..."
           />
           <ChecklistItem
-            label="10k+ kroków"
+            label={`${healthMetrics.isLoading ? 'Kroki (ładowanie...)' :
+                     healthMetrics.error ? 'Kroki (brak danych)' :
+                     `${healthMetrics.steps.value.toLocaleString()} kroków`}`}
             points={2}
             checked={checklist.steps10k}
-            onChange={(checked) => handleChecklistChange('steps10k', checked)}
-            description="Automatycznie z Withings"
+            onChange={() => {}} // Read-only
+            description={healthMetrics.error ? 'Błąd połączenia z Withings' : 'Automatycznie z Withings'}
             icon="🚶"
+            readonly={true}
           />
           <ChecklistItem
             label="Sauna"
@@ -349,12 +465,15 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
             icon="💊"
           />
           <ChecklistItem
-            label="Ważenie się"
+            label={`${healthMetrics.isLoading ? 'Waga (ładowanie...)' :
+                     healthMetrics.error ? 'Waga (brak danych)' :
+                     healthMetrics.weight.value > 0 ? `${healthMetrics.weight.value} kg` : 'Brak danych o wadze'}`}
             points={1}
             checked={checklist.weighedIn}
-            onChange={(checked) => handleChecklistChange('weighedIn', checked)}
-            description="Automatycznie z Withings"
+            onChange={() => {}} // Read-only
+            description={healthMetrics.error ? 'Błąd połączenia z Withings' : 'Automatycznie z Withings'}
             icon="⚖️"
+            readonly={true}
           />
         </div>
       </div>

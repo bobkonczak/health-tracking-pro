@@ -22,12 +22,14 @@ export interface DailyEntry {
     fastingTime?: string; // "19:00" or "17:00"
     fastingPoints: number; // 2 or 3
     training: boolean;
+    trainingDescription?: string; // Text description of training
     morningRoutine: boolean;
     sauna: boolean;
     steps10k: boolean;
     supplements: boolean;
     weighedIn: boolean;
     caloriesTracked: boolean;
+    caloriesDescription?: string; // Text description of calories tracked
   };
   metrics?: {
     weight?: number;

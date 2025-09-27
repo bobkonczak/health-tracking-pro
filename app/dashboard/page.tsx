@@ -1,31 +1,49 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Header } from '@/src/components/layout/Header';
 import {
   TrendingUp, TrendingDown, Activity, Flame, Award,
   Heart, Footprints, Moon, BarChart3
 } from 'lucide-react';
-import { User } from '@/src/types';
 import { useHealthData, useCompetitionData } from '@/src/hooks/useHealthData';
+import { useHealthMetrics } from '@/src/hooks/useHealthMetrics';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 export default function DashboardPage() {
-  const [selectedUser, setSelectedUser] = useState<User>('Bob');
+  const { selectedUser, setSelectedUser, theme } = useTheme();
   const { streak } = useHealthData(selectedUser);
   const competitionData = useCompetitionData();
-
-  // Mock Withings data - replace with real data from Supabase
-  const healthMetrics = {
-    weight: { value: 78.2, trend: -0.3, target: 75, unit: 'kg' },
-    bodyFat: { value: 18.5, trend: -0.2, target: 15, unit: '%' },
-    muscleMass: { value: 62.4, trend: 0.1, target: 65, unit: 'kg' },
-    steps: { value: 8542, target: 10000, unit: 'steps' },
-    heartRate: { value: 68, unit: 'bpm' },
-    sleepScore: { value: 82, unit: '/100' }
-  };
+  const healthMetrics = useHealthMetrics(selectedUser);
 
   const todayPoints = selectedUser === 'Bob' ? competitionData.bobToday : competitionData.paulaToday;
   const weeklyPoints = selectedUser === 'Bob' ? competitionData.bobWeekly : competitionData.paulaWeekly;
+
+  // Show loading state while fetching health metrics
+  if (healthMetrics.isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header selectedUser={selectedUser} onUserChange={setSelectedUser} />
+        <main className="container mx-auto px-4 py-6 md:px-8">
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold">Health Dashboard</h1>
+              <p className="text-muted-foreground mt-1">Loading health metrics...</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="card p-4 animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-8 bg-gray-200 rounded mb-1"></div>
+                  <div className="h-3 bg-gray-200 rounded"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -152,7 +170,7 @@ export default function DashboardPage() {
           {/* Points and Achievements */}
           <div className="grid md:grid-cols-2 gap-6">
             {/* Today's Progress */}
-            <div className="card p-6">
+            <div className={`card p-6 ${theme.cardBorder}`}>
               <h2 className="text-lg font-semibold mb-4">Today&apos;s Progress</h2>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
@@ -182,7 +200,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Weekly Summary */}
-            <div className="card p-6">
+            <div className={`card p-6 ${theme.cardBorder}`}>
               <h2 className="text-lg font-semibold mb-4">Weekly Summary</h2>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
@@ -209,9 +227,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Achievement Tracking */}
-          <div className="card p-6">
+          <div className={`card p-6 ${theme.cardBorder}`}>
             <h2 className="text-lg font-semibold mb-4 flex items-center">
-              <Award className="w-5 h-5 mr-2" />
+              <Award className={`w-5 h-5 mr-2 ${theme.text}`} />
               Achievements & Goals
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
@@ -228,7 +246,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div
-                        className={`h-2 rounded-full ${streak >= 7 ? 'bg-green-600' : 'bg-blue-600'}`}
+                        className={`h-2 rounded-full ${streak >= 7 ? 'bg-green-600' : theme.background}`}
                         style={{ width: `${Math.min(100, (streak / 7) * 100)}%` }}
                       />
                     </div>
@@ -242,7 +260,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div
-                        className={`h-2 rounded-full ${streak >= 14 ? 'bg-green-600' : 'bg-purple-600'}`}
+                        className={`h-2 rounded-full ${streak >= 14 ? 'bg-green-600' : theme.background}`}
                         style={{ width: `${Math.min(100, (streak / 14) * 100)}%` }}
                       />
                     </div>

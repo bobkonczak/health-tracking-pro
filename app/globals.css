@@ -3,6 +3,12 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* User-specific theming */
+  --user-primary: 59 130 246; /* Default blue */
+  --user-primary-rgb: 59, 130, 246;
+  --user-secondary: 107 114 128;
+  --user-accent: 243 244 246;
 }
 
 @theme inline {
@@ -23,4 +29,78 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* User-specific theme classes */
+.user-theme-bob {
+  --user-primary: 141 135 65; /* Khaki green */
+  --user-primary-rgb: 141, 135, 65;
+  --user-secondary: 107 114 128; /* Gray */
+  --user-accent: 243 244 246; /* Light gray */
+}
+
+.user-theme-paula {
+  --user-primary: 236 72 153; /* Pink */
+  --user-primary-rgb: 236, 72, 153;
+  --user-secondary: 255 255 255; /* White */
+  --user-accent: 253 242 248; /* Light pink */
+}
+
+/* Utility classes for themed components */
+.theme-primary {
+  background-color: rgb(var(--user-primary));
+}
+
+.theme-primary-text {
+  color: rgb(var(--user-primary));
+}
+
+.theme-primary-border {
+  border-color: rgb(var(--user-primary) / 0.3);
+}
+
+.theme-primary-ring {
+  --tw-ring-color: rgb(var(--user-primary) / 0.5);
+}
+
+.theme-secondary {
+  background-color: rgb(var(--user-secondary));
+}
+
+.theme-accent {
+  background-color: rgb(var(--user-accent));
+}
+
+/* Bob-specific styling */
+.bg-bob {
+  background-color: rgb(141, 135, 65);
+}
+
+.text-bob {
+  color: rgb(141, 135, 65);
+}
+
+.border-bob {
+  border-color: rgb(141, 135, 65);
+}
+
+.ring-bob {
+  --tw-ring-color: rgb(141, 135, 65 / 0.5);
+}
+
+/* Paula-specific styling */
+.bg-paula {
+  background-color: rgb(236, 72, 153);
+}
+
+.text-paula {
+  color: rgb(236, 72, 153);
+}
+
+.border-paula {
+  border-color: rgb(236, 72, 153);
+}
+
+.ring-paula {
+  --tw-ring-color: rgb(236, 72, 153 / 0.5);
 }

@@ -1,0 +1,20 @@
+
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle with safe area -->
+  <circle cx="96" cy="96" r="96" fill="url(#gradient)"/>
+
+  <!-- Health cross symbol (smaller for safe area) -->
+  <g transform="translate(96, 96)">
+    <!-- Vertical bar -->
+    <rect x="-12" y="-38.4" width="24" height="76.8" fill="white" rx="6"/>
+    <!-- Horizontal bar -->
+    <rect x="-38.4" y="-12" width="76.8" height="24" fill="white" rx="6"/>
+  </g>
+</svg>

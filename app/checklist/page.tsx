@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { CheckSquare, Flame } from 'lucide-react';
 import { Header } from '@/src/components/layout/Header';
 import { DailyChecklist } from '@/src/components/checklist/DailyChecklist';
-import { User } from '@/src/types';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 export default function ChecklistPage() {
-  const [selectedUser, setSelectedUser] = useState<User>('Bob');
+  const { selectedUser, setSelectedUser, theme } = useTheme();
 
   return (
     <div className="min-h-screen bg-background">
