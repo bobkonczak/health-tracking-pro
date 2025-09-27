@@ -73,7 +73,6 @@ export default function Dashboard() {
       data={competitionData}
       selectedUser={selectedUser}
       setSelectedUser={setSelectedUser}
-      selectedUserData={selectedUserData}
       refreshData={() => {
         competitionData.refetch();
         selectedUserData.refetch();
@@ -86,15 +85,12 @@ function DashboardContent({
   data,
   selectedUser,
   setSelectedUser,
-  selectedUserData,
   refreshData
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
   selectedUser: User;
   setSelectedUser: (user: User) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  selectedUserData?: any;
   refreshData?: () => void;
 }) {
   // Calculate progress percentages (mock for now, can be made real later)

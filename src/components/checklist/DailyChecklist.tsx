@@ -142,7 +142,10 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
   useEffect(() => {
     if (todayEntry) {
       // Load existing data for this user
-      setChecklist(todayEntry.checklist);
+      setChecklist({
+        ...todayEntry.checklist,
+        fastingTime: todayEntry.checklist.fastingTime || ''
+      });
     } else {
       // Reset to empty state for new user or no data
       setChecklist({
