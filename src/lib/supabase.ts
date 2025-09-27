@@ -115,9 +115,18 @@ export interface BodyMetric {
   body_fat?: number;
   muscle_mass?: number;
   water_percentage?: number;
+  bone_mass?: number;
   steps?: number;
   heart_rate?: number;
   sleep_score?: number;
+  // Additional Withings measurement types
+  measurement_type_91?: number; // Unknown type 91 from Pipedream
+  measurement_type_155?: number; // Unknown type 155 from Pipedream
+  pulse_wave_velocity?: number;
+  visceral_fat?: number;
+  // Metadata fields
+  data_source?: string; // 'withings', 'manual', etc.
+  last_synced?: string; // When data was last synced from Withings
   created_at?: string;
   updated_at?: string;
 }

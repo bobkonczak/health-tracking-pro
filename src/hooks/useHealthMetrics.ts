@@ -5,59 +5,103 @@ import { User } from '@/src/types';
 import { supabase, isSupabaseConfigured } from '@/src/lib/supabase';
 
 export interface HealthMetric {
-  value: number;
+  value: number | null;
   trend?: number;
   target?: number;
   unit: string;
   lastUpdated?: string;
+  dataSource?: string;
+  hasData: boolean; // Distinguishes between 0 value and no data
 }
 
 export interface HealthMetrics {
   weight: HealthMetric;
   bodyFat: HealthMetric;
   muscleMass: HealthMetric;
+  waterPercentage: HealthMetric;
+  boneMass: HealthMetric;
+  visceralFat: HealthMetric;
   steps: HealthMetric;
   heartRate: HealthMetric;
   sleepScore: HealthMetric;
+  // Unknown measurement types from Pipedream
+  unknownType91: HealthMetric;
+  unknownType155: HealthMetric;
   isLoading: boolean;
   error: string | null;
+  lastSynced?: string;
 }
 
 // Yesterday's mock data - realistic for Bob/Paula
 const getMockHealthMetrics = (user: User): HealthMetrics => {
+  const createMockMetric = (value: number | null, unit: string, target?: number, trend?: number): HealthMetric => ({
+    value,
+    unit,
+    target,
+    trend,
+    hasData: value !== null,
+    dataSource: 'mock',
+    lastUpdated: new Date().toISOString().split('T')[0]
+  });
+
   if (user === 'Bob') {
     return {
-      weight: { value: 84.2, trend: -0.3, target: 75, unit: 'kg' },
-      bodyFat: { value: 19.8, trend: -0.2, target: 15, unit: '%' },
-      muscleMass: { value: 67.1, trend: 0.1, target: 70, unit: 'kg' },
-      steps: { value: 9247, target: 10000, unit: 'steps' },
-      heartRate: { value: 68, unit: 'bpm' },
-      sleepScore: { value: 78, unit: '/100' },
+      weight: createMockMetric(84.2, 'kg', 75, -0.3),
+      bodyFat: createMockMetric(19.8, '%', 15, -0.2),
+      muscleMass: createMockMetric(67.1, 'kg', 70, 0.1),
+      waterPercentage: createMockMetric(58.5, '%'),
+      boneMass: createMockMetric(3.2, 'kg'),
+      visceralFat: createMockMetric(8, 'level'),
+      steps: createMockMetric(9247, 'steps', 10000),
+      heartRate: createMockMetric(68, 'bpm'),
+      sleepScore: createMockMetric(78, '/100'),
+      unknownType91: createMockMetric(null, 'unknown'),
+      unknownType155: createMockMetric(null, 'unknown'),
       isLoading: false,
       error: null,
+      lastSynced: new Date().toISOString()
     };
   } else {
     return {
-      weight: { value: 72.5, trend: -0.4, target: 65, unit: 'kg' },
-      bodyFat: { value: 22.3, trend: -0.3, target: 18, unit: '%' },
-      muscleMass: { value: 45.2, trend: 0.2, target: 48, unit: 'kg' },
-      steps: { value: 8832, target: 10000, unit: 'steps' },
-      heartRate: { value: 72, unit: 'bpm' },
-      sleepScore: { value: 85, unit: '/100' },
+      weight: createMockMetric(72.5, 'kg', 65, -0.4),
+      bodyFat: createMockMetric(22.3, '%', 18, -0.3),
+      muscleMass: createMockMetric(45.2, 'kg', 48, 0.2),
+      waterPercentage: createMockMetric(55.8, '%'),
+      boneMass: createMockMetric(2.8, 'kg'),
+      visceralFat: createMockMetric(6, 'level'),
+      steps: createMockMetric(8832, 'steps', 10000),
+      heartRate: createMockMetric(72, 'bpm'),
+      sleepScore: createMockMetric(85, '/100'),
+      unknownType91: createMockMetric(null, 'unknown'),
+      unknownType155: createMockMetric(null, 'unknown'),
       isLoading: false,
       error: null,
+      lastSynced: new Date().toISOString()
     };
   }
 };
 
 export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => Promise<void> } {
+  const createEmptyMetric = (unit: string, target?: number): HealthMetric => ({
+    value: null,
+    unit,
+    target,
+    hasData: false,
+    dataSource: undefined
+  });
+
   const [data, setData] = useState<HealthMetrics>(() => ({
-    weight: { value: 0, unit: 'kg' },
-    bodyFat: { value: 0, unit: '%' },
-    muscleMass: { value: 0, unit: 'kg' },
-    steps: { value: 0, target: 10000, unit: 'steps' },
-    heartRate: { value: 0, unit: 'bpm' },
-    sleepScore: { value: 0, unit: '/100' },
+    weight: createEmptyMetric('kg'),
+    bodyFat: createEmptyMetric('%'),
+    muscleMass: createEmptyMetric('kg'),
+    waterPercentage: createEmptyMetric('%'),
+    boneMass: createEmptyMetric('kg'),
+    visceralFat: createEmptyMetric('level'),
+    steps: createEmptyMetric('steps', 10000),
+    heartRate: createEmptyMetric('bpm'),
+    sleepScore: createEmptyMetric('/100'),
+    unknownType91: createEmptyMetric('unknown'),
+    unknownType155: createEmptyMetric('unknown'),
     isLoading: true,
     error: null,
   }));
@@ -86,9 +130,20 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
       const dayBeforeYesterdayStr = dayBeforeYesterday.toISOString().split('T')[0];
 
       // Fetch health metrics for yesterday and day before for trend calculation
+      // Select ALL available fields to capture complete Withings data
       const { data: healthData, error: healthError } = await supabase!
         .from('health_metrics')
-        .select('*')
+        .select(`
+          *,
+          data_source,
+          last_synced,
+          measurement_type_91,
+          measurement_type_155,
+          pulse_wave_velocity,
+          visceral_fat,
+          bone_mass,
+          water_percentage
+        `)
         .eq('user_name', user)
         .in('date', [yesterdayStr, dayBeforeYesterdayStr])
         .order('date', { ascending: false })
@@ -137,75 +192,162 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
         weight: yesterdayData.weight,
         body_fat: yesterdayData.body_fat,
         muscle_mass: yesterdayData.muscle_mass,
+        water_percentage: yesterdayData.water_percentage,
+        bone_mass: yesterdayData.bone_mass,
+        visceral_fat: yesterdayData.visceral_fat,
         steps: yesterdayData.steps,
         heart_rate: yesterdayData.heart_rate,
         sleep_score: yesterdayData.sleep_score,
+        measurement_type_91: yesterdayData.measurement_type_91,
+        measurement_type_155: yesterdayData.measurement_type_155,
+        data_source: yesterdayData.data_source,
+        last_synced: yesterdayData.last_synced,
         date: yesterdayData.date,
-        allFields: Object.keys(yesterdayData)
+        allFields: Object.keys(yesterdayData),
+        totalFields: Object.keys(yesterdayData).length
+      });
+
+      // Helper function to create health metric with proper null handling
+      const createHealthMetric = (
+        value: number | null | undefined,
+        unit: string,
+        target?: number,
+        trend?: number,
+        dataSource?: string
+      ): HealthMetric => ({
+        value: value ?? null,
+        unit,
+        target,
+        trend,
+        hasData: value !== null && value !== undefined,
+        dataSource: dataSource || yesterdayData.data_source || 'withings',
+        lastUpdated: yesterdayData.date
       });
 
       const healthMetrics: HealthMetrics = {
-        weight: {
-          value: yesterdayData.weight || 0,
-          trend: calculateTrend(yesterdayData.weight, dayBeforeData?.weight),
-          target: profileData?.target_weight || (user === 'Bob' ? 75 : 65),
-          unit: 'kg',
-          lastUpdated: yesterdayData.date,
-        },
-        bodyFat: {
-          value: yesterdayData.body_fat || 0,
-          trend: calculateTrend(yesterdayData.body_fat, dayBeforeData?.body_fat),
-          target: profileData?.target_body_fat || (user === 'Bob' ? 15 : 18),
-          unit: '%',
-          lastUpdated: yesterdayData.date,
-        },
-        muscleMass: {
-          value: yesterdayData.muscle_mass || 0,
-          trend: calculateTrend(yesterdayData.muscle_mass, dayBeforeData?.muscle_mass),
-          target: profileData?.target_muscle_mass || (user === 'Bob' ? 70 : 48),
-          unit: 'kg',
-          lastUpdated: yesterdayData.date,
-        },
-        steps: {
-          value: yesterdayData.steps || 0,
-          target: 10000,
-          unit: 'steps',
-          lastUpdated: yesterdayData.date,
-        },
-        heartRate: {
-          value: yesterdayData.heart_rate || 0,
-          unit: 'bpm',
-          lastUpdated: yesterdayData.date,
-        },
-        sleepScore: {
-          value: yesterdayData.sleep_score || 0,
-          unit: '/100',
-          lastUpdated: yesterdayData.date,
-        },
+        weight: createHealthMetric(
+          yesterdayData.weight,
+          'kg',
+          profileData?.target_weight || (user === 'Bob' ? 75 : 65),
+          calculateTrend(yesterdayData.weight, dayBeforeData?.weight)
+        ),
+        bodyFat: createHealthMetric(
+          yesterdayData.body_fat,
+          '%',
+          profileData?.target_body_fat || (user === 'Bob' ? 15 : 18),
+          calculateTrend(yesterdayData.body_fat, dayBeforeData?.body_fat)
+        ),
+        muscleMass: createHealthMetric(
+          yesterdayData.muscle_mass,
+          'kg',
+          profileData?.target_muscle_mass || (user === 'Bob' ? 70 : 48),
+          calculateTrend(yesterdayData.muscle_mass, dayBeforeData?.muscle_mass)
+        ),
+        waterPercentage: createHealthMetric(
+          yesterdayData.water_percentage,
+          '%',
+          undefined,
+          calculateTrend(yesterdayData.water_percentage, dayBeforeData?.water_percentage)
+        ),
+        boneMass: createHealthMetric(
+          yesterdayData.bone_mass,
+          'kg',
+          undefined,
+          calculateTrend(yesterdayData.bone_mass, dayBeforeData?.bone_mass)
+        ),
+        visceralFat: createHealthMetric(
+          yesterdayData.visceral_fat,
+          'level',
+          undefined,
+          calculateTrend(yesterdayData.visceral_fat, dayBeforeData?.visceral_fat)
+        ),
+        steps: createHealthMetric(
+          yesterdayData.steps,
+          'steps',
+          10000
+        ),
+        heartRate: createHealthMetric(
+          yesterdayData.heart_rate,
+          'bpm'
+        ),
+        sleepScore: createHealthMetric(
+          yesterdayData.sleep_score,
+          '/100'
+        ),
+        unknownType91: createHealthMetric(
+          yesterdayData.measurement_type_91,
+          'unknown'
+        ),
+        unknownType155: createHealthMetric(
+          yesterdayData.measurement_type_155,
+          'unknown'
+        ),
         isLoading: false,
         error: null,
+        lastSynced: yesterdayData.last_synced
       };
 
       // Data validation: check for impossible values and log warnings
       const validationWarnings = [];
-      if (healthMetrics.weight.value && (healthMetrics.weight.value < 40 || healthMetrics.weight.value > 200)) {
-        validationWarnings.push(`⚠️ Suspicious weight: ${healthMetrics.weight.value}kg (normal range: 40-200kg)`);
+      const dataStatus = [];
+
+      if (healthMetrics.weight.value !== null) {
+        if (healthMetrics.weight.value < 40 || healthMetrics.weight.value > 200) {
+          validationWarnings.push(`⚠️ Suspicious weight: ${healthMetrics.weight.value}kg (normal range: 40-200kg)`);
+        }
+      } else {
+        dataStatus.push('❌ No weight data');
       }
-      if (healthMetrics.bodyFat.value && (healthMetrics.bodyFat.value < 3 || healthMetrics.bodyFat.value > 50)) {
-        validationWarnings.push(`⚠️ Suspicious body fat: ${healthMetrics.bodyFat.value}% (normal range: 3-50%)`);
+
+      if (healthMetrics.bodyFat.value !== null) {
+        if (healthMetrics.bodyFat.value < 3 || healthMetrics.bodyFat.value > 50) {
+          validationWarnings.push(`⚠️ Suspicious body fat: ${healthMetrics.bodyFat.value}% (normal range: 3-50%)`);
+        }
+      } else {
+        dataStatus.push('❌ No body fat data');
       }
-      if (healthMetrics.heartRate.value && (healthMetrics.heartRate.value < 40 || healthMetrics.heartRate.value > 120)) {
-        validationWarnings.push(`⚠️ Suspicious heart rate: ${healthMetrics.heartRate.value}bpm (normal range: 40-120bpm)`);
+
+      if (healthMetrics.heartRate.value !== null) {
+        if (healthMetrics.heartRate.value < 40 || healthMetrics.heartRate.value > 120) {
+          validationWarnings.push(`⚠️ Suspicious heart rate: ${healthMetrics.heartRate.value}bpm (normal range: 40-120bpm)`);
+        }
+      } else {
+        dataStatus.push('❌ No heart rate data');
       }
-      if (healthMetrics.steps.value > 50000) {
+
+      if (healthMetrics.steps.value !== null && healthMetrics.steps.value > 50000) {
         validationWarnings.push(`⚠️ Suspicious steps: ${healthMetrics.steps.value} (max expected: 50000)`);
+      }
+
+      // Log data availability and unknown measurement types
+      if (healthMetrics.unknownType91.value !== null) {
+        console.log(`🔍 Found unknown measurement type 91: ${healthMetrics.unknownType91.value}`);
+      }
+      if (healthMetrics.unknownType155.value !== null) {
+        console.log(`🔍 Found unknown measurement type 155: ${healthMetrics.unknownType155.value}`);
       }
 
       if (validationWarnings.length > 0) {
         console.warn('🔍 DATA VALIDATION WARNINGS:', validationWarnings);
       }
 
+      if (dataStatus.length > 0) {
+        console.info('🔍 DATA AVAILABILITY STATUS:', dataStatus);
+      }
+
+      // Summary of data freshness and sources
+      const dataSummary = {
+        totalMetrics: Object.keys(healthMetrics).filter(key => key !== 'isLoading' && key !== 'error' && key !== 'lastSynced').length,
+        metricsWithData: Object.entries(healthMetrics)
+          .filter(([key, metric]) => key !== 'isLoading' && key !== 'error' && key !== 'lastSynced' && (metric as HealthMetric).hasData)
+          .length,
+        dataSource: healthMetrics.weight.dataSource,
+        lastSynced: healthMetrics.lastSynced,
+        date: yesterdayData.date
+      };
+
       console.log('🔍 DEBUG: Final health metrics calculated:', healthMetrics);
+      console.log('📊 DATA SUMMARY:', dataSummary);
 
       setData(healthMetrics);
 

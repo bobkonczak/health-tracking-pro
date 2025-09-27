@@ -71,8 +71,12 @@ export default function DashboardPage() {
                   <TrendingUp className="w-4 h-4 text-red-600" />
                 ) : null}
               </div>
-              <p className="text-2xl font-bold">{healthMetrics.weight.value}</p>
-              <p className="text-xs text-muted-foreground">{healthMetrics.weight.unit}</p>
+              <p className="text-2xl font-bold">
+                {healthMetrics.weight.hasData ? healthMetrics.weight.value : 'No data'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {healthMetrics.weight.hasData ? healthMetrics.weight.unit : 'Not available'}
+              </p>
               <div className="mt-2">
                 <div className="flex justify-between text-xs">
                   <span>Target: {healthMetrics.weight.target}</span>
@@ -89,12 +93,20 @@ export default function DashboardPage() {
                 <span className="text-sm text-muted-foreground">Body Fat</span>
                 <Activity className="w-4 h-4 text-blue-600" />
               </div>
-              <p className="text-2xl font-bold">{healthMetrics.bodyFat.value}</p>
-              <p className="text-xs text-muted-foreground">{healthMetrics.bodyFat.unit}</p>
+              <p className="text-2xl font-bold">
+                {healthMetrics.bodyFat.hasData ? healthMetrics.bodyFat.value : 'No data'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {healthMetrics.bodyFat.hasData ? healthMetrics.bodyFat.unit : 'Not available'}
+              </p>
               <div className="mt-2 text-xs">
-                <span className={healthMetrics.bodyFat.value < 20 ? 'text-green-600' : 'text-yellow-600'}>
-                  {healthMetrics.bodyFat.value < 15 ? 'Athletic' :
-                   healthMetrics.bodyFat.value < 20 ? 'Healthy' :
+                <span className={
+                  !healthMetrics.bodyFat.hasData ? 'text-gray-500' :
+                  healthMetrics.bodyFat.value! < 20 ? 'text-green-600' : 'text-yellow-600'
+                }>
+                  {!healthMetrics.bodyFat.hasData ? 'No category available' :
+                   healthMetrics.bodyFat.value! < 15 ? 'Athletic' :
+                   healthMetrics.bodyFat.value! < 20 ? 'Healthy' :
                    'Above target'}
                 </span>
               </div>
@@ -142,8 +154,12 @@ export default function DashboardPage() {
                 <span className="text-sm text-muted-foreground">Heart Rate</span>
                 <Heart className="w-4 h-4 text-red-600" />
               </div>
-              <p className="text-2xl font-bold">{healthMetrics.heartRate.value}</p>
-              <p className="text-xs text-muted-foreground">{healthMetrics.heartRate.unit}</p>
+              <p className="text-2xl font-bold">
+                {healthMetrics.heartRate.hasData ? healthMetrics.heartRate.value : 'No data'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {healthMetrics.heartRate.hasData ? healthMetrics.heartRate.unit : 'Not available'}
+              </p>
               <div className="mt-2 text-xs text-green-600">
                 Resting
               </div>
