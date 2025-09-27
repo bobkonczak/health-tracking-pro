@@ -7,7 +7,7 @@ import {
   Heart, Footprints, Moon, BarChart3
 } from 'lucide-react';
 import { useHealthData, useCompetitionData } from '@/src/hooks/useHealthData';
-import { useHealthMetrics } from '@/src/hooks/useHealthMetrics';
+import { useHealthMetrics } from '@/src/hooks/useHealthMetricsAPI';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { testDirectSupabaseQuery } from '@/src/utils/supabaseTest';
 
