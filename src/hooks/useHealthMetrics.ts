@@ -96,6 +96,15 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
 
       if (healthError) throw healthError;
 
+      // Debug: Log the actual data we received
+      console.log('🔍 DEBUG: Health data from Supabase:', {
+        user,
+        yesterdayStr,
+        dayBeforeYesterdayStr,
+        healthData,
+        dataCount: healthData?.length || 0
+      });
+
       // Get user targets from user_profiles table
       const { data: profileData, error: profileError } = await supabase!
         .from('user_profiles')
@@ -123,6 +132,18 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
         return parseFloat((current - previous).toFixed(1));
       };
 
+      // Debug: Log the individual data points we're processing
+      console.log('🔍 DEBUG: Processing individual metrics:', {
+        weight: yesterdayData.weight,
+        body_fat: yesterdayData.body_fat,
+        muscle_mass: yesterdayData.muscle_mass,
+        steps: yesterdayData.steps,
+        heart_rate: yesterdayData.heart_rate,
+        sleep_score: yesterdayData.sleep_score,
+        date: yesterdayData.date,
+        allFields: Object.keys(yesterdayData)
+      });
+
       const healthMetrics: HealthMetrics = {
         weight: {
           value: yesterdayData.weight || 0,
@@ -132,8 +153,8 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
           lastUpdated: yesterdayData.date,
         },
         bodyFat: {
-          value: yesterdayData.body_fat_percentage || 0,
-          trend: calculateTrend(yesterdayData.body_fat_percentage, dayBeforeData?.body_fat_percentage),
+          value: yesterdayData.body_fat || 0,
+          trend: calculateTrend(yesterdayData.body_fat, dayBeforeData?.body_fat),
           target: profileData?.target_body_fat || (user === 'Bob' ? 15 : 18),
           unit: '%',
           lastUpdated: yesterdayData.date,
@@ -152,7 +173,7 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
           lastUpdated: yesterdayData.date,
         },
         heartRate: {
-          value: yesterdayData.resting_heart_rate || 0,
+          value: yesterdayData.heart_rate || 0,
           unit: 'bpm',
           lastUpdated: yesterdayData.date,
         },
@@ -164,6 +185,27 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
         isLoading: false,
         error: null,
       };
+
+      // Data validation: check for impossible values and log warnings
+      const validationWarnings = [];
+      if (healthMetrics.weight.value && (healthMetrics.weight.value < 40 || healthMetrics.weight.value > 200)) {
+        validationWarnings.push(`⚠️ Suspicious weight: ${healthMetrics.weight.value}kg (normal range: 40-200kg)`);
+      }
+      if (healthMetrics.bodyFat.value && (healthMetrics.bodyFat.value < 3 || healthMetrics.bodyFat.value > 50)) {
+        validationWarnings.push(`⚠️ Suspicious body fat: ${healthMetrics.bodyFat.value}% (normal range: 3-50%)`);
+      }
+      if (healthMetrics.heartRate.value && (healthMetrics.heartRate.value < 40 || healthMetrics.heartRate.value > 120)) {
+        validationWarnings.push(`⚠️ Suspicious heart rate: ${healthMetrics.heartRate.value}bpm (normal range: 40-120bpm)`);
+      }
+      if (healthMetrics.steps.value > 50000) {
+        validationWarnings.push(`⚠️ Suspicious steps: ${healthMetrics.steps.value} (max expected: 50000)`);
+      }
+
+      if (validationWarnings.length > 0) {
+        console.warn('🔍 DATA VALIDATION WARNINGS:', validationWarnings);
+      }
+
+      console.log('🔍 DEBUG: Final health metrics calculated:', healthMetrics);
 
       setData(healthMetrics);
 
@@ -241,7 +283,7 @@ export function useHealthTrends(user: User, days: number = 7) {
 
       const { data, error } = await supabase!
         .from('health_metrics')
-        .select('date, weight, body_fat_percentage, steps')
+        .select('date, weight, body_fat, steps')
         .eq('user_name', user)
         .gte('date', startDate.toISOString().split('T')[0])
         .lte('date', endDate.toISOString().split('T')[0])
@@ -251,7 +293,7 @@ export function useHealthTrends(user: User, days: number = 7) {
 
       setTrends({
         weight: data?.map(d => ({ date: d.date, value: d.weight || 0 })) || [],
-        bodyFat: data?.map(d => ({ date: d.date, value: d.body_fat_percentage || 0 })) || [],
+        bodyFat: data?.map(d => ({ date: d.date, value: d.body_fat || 0 })) || [],
         steps: data?.map(d => ({ date: d.date, value: d.steps || 0 })) || [],
         isLoading: false,
         error: null,
