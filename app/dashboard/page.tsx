@@ -9,6 +9,7 @@ import {
 import { useHealthData, useCompetitionData } from '@/src/hooks/useHealthData';
 import { useHealthMetrics } from '@/src/hooks/useHealthMetrics';
 import { useTheme } from '@/src/contexts/ThemeContext';
+import { testDirectSupabaseQuery } from '@/src/utils/supabaseTest';
 
 export default function DashboardPage() {
   const { selectedUser, setSelectedUser, theme } = useTheme();
@@ -18,6 +19,13 @@ export default function DashboardPage() {
 
   const todayPoints = selectedUser === 'Bob' ? competitionData.bobToday : competitionData.paulaToday;
   const weeklyPoints = selectedUser === 'Bob' ? competitionData.bobWeekly : competitionData.paulaWeekly;
+
+  // DIRECT SUPABASE TEST
+  const runDirectTest = async () => {
+    console.log('🚀 RUNNING DIRECT SUPABASE TEST...');
+    const result = await testDirectSupabaseQuery();
+    console.log('📊 TEST RESULT:', result);
+  };
 
   // Show loading state while fetching health metrics
   if (healthMetrics.isLoading) {
@@ -53,10 +61,22 @@ export default function DashboardPage() {
         <div className="space-y-6">
           {/* Dashboard Header */}
           <div>
-            <h1 className="text-3xl font-bold">Health Dashboard</h1>
+            <h1 className="text-3xl font-bold flex items-center">
+              Health Dashboard
+              <button
+                onClick={runDirectTest}
+                className="ml-4 px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                title="Test direct Supabase query"
+              >
+                🔍 TEST DB
+              </button>
+            </h1>
             <p className="text-muted-foreground mt-1">
               {selectedUser}&apos;s health metrics and daily progress
             </p>
+            {healthMetrics.error && (
+              <p className="text-red-600 mt-2 font-medium">🚨 {healthMetrics.error}</p>
+            )}
           </div>
 
           {/* Key Metrics Grid */}

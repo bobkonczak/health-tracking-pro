@@ -110,13 +110,30 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
     try {
       setData(prev => ({ ...prev, isLoading: true, error: null }));
 
-      // Check if Supabase is configured - if not, use mock data
+      // STOP using mock data - require real Supabase connection
       if (!isSupabaseConfigured()) {
-        // Simulate API delay for mock mode
-        await new Promise(resolve => setTimeout(resolve, 400));
+        throw new Error('CRITICAL: Supabase not configured. Environment variables NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required.');
+      }
 
-        setData(getMockHealthMetrics(user));
-        return;
+      // Test direct query for specific record first
+      console.log('🔍 TESTING DIRECT SUPABASE QUERY...');
+      const targetId = 'df66d8ea-d3a7-47b0-8a45-bf90af220799';
+      const { data: testRecord, error: testError } = await supabase!
+        .from('health_metrics')
+        .select('*')
+        .eq('id', targetId)
+        .single();
+
+      if (!testError && testRecord) {
+        console.log('✅ DIRECT QUERY SUCCESS - TARGET RECORD FOUND:', {
+          id: testRecord.id,
+          body_fat: testRecord.body_fat,
+          weight: testRecord.weight,
+          user: testRecord.user_name,
+          date: testRecord.date
+        });
+      } else {
+        console.warn('⚠️ Target record not found, proceeding with date-based query...');
       }
 
       // Get yesterday's date (health data is typically from previous day)
@@ -176,9 +193,8 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
       const dayBeforeData = healthData?.[1];
 
       if (!yesterdayData) {
-        // No data available, use mock data
-        setData(getMockHealthMetrics(user));
-        return;
+        // NO MOCK DATA - Fail with clear error message
+        throw new Error(`CRITICAL: No health data found for ${user} on ${yesterdayStr}. Database connection working but no records exist.`);
       }
 
       // Calculate trends (yesterday vs day before)
@@ -353,13 +369,14 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch health metrics';
-      console.error('Health metrics fetch error:', error);
+      console.error('❌ HEALTH METRICS FETCH ERROR:', error);
 
-      // On error, fall back to mock data
-      setData({
-        ...getMockHealthMetrics(user),
+      // NO MOCK DATA FALLBACK - Show real error
+      setData(prev => ({
+        ...prev,
+        isLoading: false,
         error: errorMessage
-      });
+      }));
     }
   }, [user]);
 
@@ -391,32 +408,7 @@ export function useHealthTrends(user: User, days: number = 7) {
       setTrends(prev => ({ ...prev, isLoading: true, error: null }));
 
       if (!isSupabaseConfigured()) {
-        // Generate mock trend data
-        const mockTrends = Array.from({ length: days }, (_, i) => {
-          const date = new Date();
-          date.setDate(date.getDate() - (days - 1 - i));
-          const dateStr = date.toISOString().split('T')[0];
-
-          const baseWeight = user === 'Bob' ? 85 : 73;
-          const baseBodyFat = user === 'Bob' ? 20 : 23;
-          const baseSteps = 8500;
-
-          return {
-            date: dateStr,
-            weight: baseWeight + (Math.random() - 0.5) * 2,
-            bodyFat: baseBodyFat + (Math.random() - 0.5) * 1.5,
-            steps: baseSteps + Math.floor(Math.random() * 3000),
-          };
-        });
-
-        setTrends({
-          weight: mockTrends.map(d => ({ date: d.date, value: d.weight })),
-          bodyFat: mockTrends.map(d => ({ date: d.date, value: d.bodyFat })),
-          steps: mockTrends.map(d => ({ date: d.date, value: d.steps })),
-          isLoading: false,
-          error: null,
-        });
-        return;
+        throw new Error('CRITICAL: Supabase not configured for trends. No mock data available.');
       }
 
       const endDate = new Date();
