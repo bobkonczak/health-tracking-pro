@@ -1,10 +1,21 @@
 import { NextResponse } from 'next/server';
+import { healthCheck } from '@/src/lib/supabase';
 
 export async function GET() {
-  return NextResponse.json({
-    status: 'healthy',
-    database: true,
-    timestamp: new Date().toISOString(),
-    message: 'Mock health check - no database required'
-  });
+  try {
+    const health = await healthCheck();
+
+    const statusCode = health.status === 'healthy' ? 200
+                     : health.status === 'degraded' ? 503
+                     : 500;
+
+    return NextResponse.json(health, { status: statusCode });
+  } catch (error) {
+    return NextResponse.json({
+      status: 'offline',
+      database: false,
+      timestamp: new Date().toISOString(),
+      details: error
+    }, { status: 500 });
+  }
 }
