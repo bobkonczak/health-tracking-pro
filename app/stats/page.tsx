@@ -9,6 +9,7 @@ import { DailyEntry } from '@/src/types';
 import { useHealthData } from '@/src/hooks/useHealthData';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { cn } from '@/src/lib/utils';
+import { HistoricalHealthData } from '@/src/components/stats/HistoricalHealthData';
 
 // Generate all days in the challenge period
 function generateChallengeDays() {
@@ -520,6 +521,9 @@ export default function EnhancedStatsPage() {
               })}
             </div>
           </div>
+
+          {/* Historical Health Data Section */}
+          <HistoricalHealthData user={selectedUser} />
         </div>
       </main>
 
