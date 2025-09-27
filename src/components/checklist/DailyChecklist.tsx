@@ -267,9 +267,9 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
       setChecklist(prev => ({
         ...prev,
         // Auto-check steps if >= 10k from health_metrics
-        steps10k: healthMetrics.steps.value >= 10000,
+        steps10k: healthMetrics.steps.hasData && healthMetrics.steps.value! >= 10000,
         // Auto-check weight if data exists in health_metrics
-        weighedIn: healthMetrics.weight.value > 0
+        weighedIn: healthMetrics.weight.hasData && healthMetrics.weight.value! > 0
       }));
     }
   }, [healthMetrics]);
@@ -427,7 +427,7 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
           <ChecklistItem
             label={`${healthMetrics.isLoading ? 'Kroki (ładowanie...)' :
                      healthMetrics.error ? 'Kroki (brak danych)' :
-                     `${healthMetrics.steps.value.toLocaleString()} kroków`}`}
+                     healthMetrics.steps.hasData ? `${healthMetrics.steps.value!.toLocaleString()} kroków` : 'Kroki (brak danych)'}`}
             points={2}
             checked={checklist.steps10k}
             onChange={() => {}} // Read-only
@@ -467,7 +467,7 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
           <ChecklistItem
             label={`${healthMetrics.isLoading ? 'Waga (ładowanie...)' :
                      healthMetrics.error ? 'Waga (brak danych)' :
-                     healthMetrics.weight.value > 0 ? `${healthMetrics.weight.value} kg` : 'Brak danych o wadze'}`}
+                     healthMetrics.weight.hasData && healthMetrics.weight.value! > 0 ? `${healthMetrics.weight.value} kg` : 'Brak danych o wadze'}`}
             points={1}
             checked={checklist.weighedIn}
             onChange={() => {}} // Read-only

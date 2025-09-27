@@ -124,7 +124,7 @@ export default function DashboardPage() {
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                   <div
                     className="bg-purple-600 h-1.5 rounded-full"
-                    style={{ width: `${healthMetrics.muscleMass.target ? (healthMetrics.muscleMass.value / healthMetrics.muscleMass.target) * 100 : 0}%` }}
+                    style={{ width: `${(healthMetrics.muscleMass.target && healthMetrics.muscleMass.value) ? (healthMetrics.muscleMass.value / healthMetrics.muscleMass.target) * 100 : 0}%` }}
                   />
                 </div>
               </div>
@@ -136,13 +136,15 @@ export default function DashboardPage() {
                 <span className="text-sm text-muted-foreground">Steps</span>
                 <Footprints className="w-4 h-4 text-green-600" />
               </div>
-              <p className="text-2xl font-bold">{healthMetrics.steps.value.toLocaleString()}</p>
+              <p className="text-2xl font-bold">
+                {healthMetrics.steps.hasData ? healthMetrics.steps.value!.toLocaleString() : 'No data'}
+              </p>
               <p className="text-xs text-muted-foreground">/ {healthMetrics.steps.target?.toLocaleString() || '10,000'}</p>
               <div className="mt-2">
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                   <div
                     className="bg-green-600 h-1.5 rounded-full"
-                    style={{ width: `${Math.min(100, (healthMetrics.steps.value / (healthMetrics.steps.target || 10000)) * 100)}%` }}
+                    style={{ width: `${healthMetrics.steps.hasData ? Math.min(100, (healthMetrics.steps.value! / (healthMetrics.steps.target || 10000)) * 100) : 0}%` }}
                   />
                 </div>
               </div>
@@ -171,13 +173,19 @@ export default function DashboardPage() {
                 <span className="text-sm text-muted-foreground">Sleep</span>
                 <Moon className="w-4 h-4 text-indigo-600" />
               </div>
-              <p className="text-2xl font-bold">{healthMetrics.sleepScore.value}</p>
+              <p className="text-2xl font-bold">
+                {healthMetrics.sleepScore.hasData ? healthMetrics.sleepScore.value : 'No data'}
+              </p>
               <p className="text-xs text-muted-foreground">{healthMetrics.sleepScore.unit}</p>
               <div className="mt-2 text-xs">
-                <span className={healthMetrics.sleepScore.value > 80 ? 'text-green-600' : 'text-yellow-600'}>
-                  {healthMetrics.sleepScore.value > 90 ? 'Excellent' :
-                   healthMetrics.sleepScore.value > 80 ? 'Good' :
-                   healthMetrics.sleepScore.value > 70 ? 'Fair' : 'Poor'}
+                <span className={
+                  !healthMetrics.sleepScore.hasData ? 'text-gray-500' :
+                  healthMetrics.sleepScore.value! > 80 ? 'text-green-600' : 'text-yellow-600'
+                }>
+                  {!healthMetrics.sleepScore.hasData ? 'No quality rating' :
+                   healthMetrics.sleepScore.value! > 90 ? 'Excellent' :
+                   healthMetrics.sleepScore.value! > 80 ? 'Good' :
+                   healthMetrics.sleepScore.value! > 70 ? 'Fair' : 'Poor'}
                 </span>
               </div>
             </div>
@@ -327,27 +335,34 @@ export default function DashboardPage() {
                     <div className="flex justify-between text-sm mb-1">
                       <span>Weight Target</span>
                       <span className="text-gray-400">
-                        {healthMetrics.weight.target ? Math.abs(healthMetrics.weight.value - healthMetrics.weight.target).toFixed(1) : 'N/A'} kg to go
+                        {(healthMetrics.weight.target && healthMetrics.weight.hasData) ? Math.abs(healthMetrics.weight.value! - healthMetrics.weight.target).toFixed(1) : 'N/A'} kg to go
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div
                         className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${healthMetrics.weight.target ? Math.max(0, 100 - Math.abs(healthMetrics.weight.value - healthMetrics.weight.target) * 5) : 0}%` }}
+                        style={{ width: `${(healthMetrics.weight.target && healthMetrics.weight.hasData) ? Math.max(0, 100 - Math.abs(healthMetrics.weight.value! - healthMetrics.weight.target) * 5) : 0}%` }}
                       />
                     </div>
                   </div>
                   <div>
                     <div className="flex justify-between text-sm mb-1">
                       <span>Daily Steps</span>
-                      <span className={healthMetrics.steps.value >= 10000 ? 'text-green-600' : 'text-gray-400'}>
-                        {healthMetrics.steps.value >= 10000 ? '✓' : `${(healthMetrics.steps.value / 1000).toFixed(1)}k/10k`}
+                      <span className={
+                        !healthMetrics.steps.hasData ? 'text-gray-400' :
+                        healthMetrics.steps.value! >= 10000 ? 'text-green-600' : 'text-gray-400'
+                      }>
+                        {!healthMetrics.steps.hasData ? 'No data' :
+                         healthMetrics.steps.value! >= 10000 ? '✓' : `${(healthMetrics.steps.value! / 1000).toFixed(1)}k/10k`}
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div
-                        className={`h-2 rounded-full ${healthMetrics.steps.value >= 10000 ? 'bg-green-600' : 'bg-cyan-600'}`}
-                        style={{ width: `${Math.min(100, (healthMetrics.steps.value / 10000) * 100)}%` }}
+                        className={`h-2 rounded-full ${
+                          !healthMetrics.steps.hasData ? 'bg-gray-300' :
+                          healthMetrics.steps.value! >= 10000 ? 'bg-green-600' : 'bg-cyan-600'
+                        }`}
+                        style={{ width: `${healthMetrics.steps.hasData ? Math.min(100, (healthMetrics.steps.value! / 10000) * 100) : 0}%` }}
                       />
                     </div>
                   </div>
