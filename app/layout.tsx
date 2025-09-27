@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { Navigation } from "@/src/components/layout/Navigation";
+import { Sidebar } from "@/src/components/layout/Sidebar";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -25,9 +25,14 @@ export default function RootLayout({
   return (
     <html lang="pl" suppressHydrationWarning>
       <body className={`${inter.className} antialiased min-h-screen bg-background`}>
-        <div className="flex flex-col md:flex-row min-h-screen">
-          <Navigation />
-          <div className="flex-1 flex flex-col pb-16 md:pb-0">
+        <div className="flex min-h-screen">
+          {/* Sidebar Navigation */}
+          <div className="hidden md:flex md:w-64 md:flex-col">
+            <Sidebar />
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col">
             {children}
           </div>
         </div>

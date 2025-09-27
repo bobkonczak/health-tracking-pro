@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, Suspense } from 'react';
-import { Trophy, TrendingUp, Target, Flame, Calendar, Users, AlertCircle } from 'lucide-react';
-import { User } from '@/src/types';
+import { Trophy, Target, Flame, Users, AlertCircle } from 'lucide-react';
 import { useCompetitionData } from '@/src/hooks/useHealthData';
 import { Header } from '@/src/components/layout/Header';
 
@@ -14,10 +13,6 @@ const DailyChecklist = dynamic(() => import('@/src/components/checklist/DailyChe
   ssr: false
 });
 
-const BodyMetricsForm = dynamic(() => import('@/src/components/health/BodyMetricsForm').then(mod => ({ default: mod.BodyMetricsForm })), {
-  loading: () => <div className="animate-pulse bg-gray-200 rounded-lg h-40"></div>,
-  ssr: false
-});
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
@@ -82,9 +77,12 @@ export default function ClientDashboard() {
         <div className="text-center md:text-left">
           <h1 className="text-3xl font-bold">Dzień dobry! 💪</h1>
           <p className="text-muted-foreground mt-2">
-            Dzień {Math.floor((Date.now() - new Date('2024-09-15').getTime()) / (1000 * 60 * 60 * 24)) + 1} z 101 challenge. Keep pushing!
+            Dzień {Math.floor((new Date('2024-09-27').getTime() - new Date('2024-09-15').getTime()) / (1000 * 60 * 60 * 24)) + 1} z 101 challenge. Keep pushing!
             <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
               ✓ App running at {typeof window !== 'undefined' ? window.location.hostname : 'health.konczak.io'}
+            </span>
+            <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+              🗄️ Database: {competitionData.isLoading ? 'Checking...' : competitionData.error ? 'Offline' : 'Connected'}
             </span>
           </p>
         </div>
@@ -259,42 +257,18 @@ export default function ClientDashboard() {
               <DailyChecklist
                 user={selectedUser}
                 onSave={async (data) => {
-                  try {
-                    console.log('🚀 Frontend: Starting checklist save for user:', data.user);
-                    console.log('📝 Frontend: Data to save:', JSON.stringify(data, null, 2));
+                  setDataError(null);
 
-                    setDataError(null); // Clear any previous errors
+                  const response = await fetch('/api/checklist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                  });
 
-                    const response = await fetch('/api/checklist', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(data),
-                    });
+                  const result = await response.json();
 
-                    console.log('📡 Frontend: Response status:', response.status, response.statusText);
-                    console.log('📡 Frontend: Response headers:', Object.fromEntries(response.headers.entries()));
-
-                    const result = await response.json();
-                    console.log('📨 Frontend: Response body:', result);
-
-                    if (!response.ok) {
-                      console.error('❌ Frontend: API returned error status:', response.status);
-                      throw new Error(result.error || `Failed to save checklist (${response.status})`);
-                    }
-
-                    // Show success feedback
-                    setDataError(null);
-                    console.log('✅ Frontend: Checklist saved successfully for', data.user, ':', result);
-
-                    // Optionally show a temporary success message
-                    setTimeout(() => {
-                      // This could be improved with a proper toast notification
-                    }, 2000);
-
-                  } catch (error) {
-                    console.error('❌ Frontend: Error saving checklist:', error);
-                    const errorMessage = error instanceof Error ? error.message : 'Failed to save checklist data';
-                    setDataError(`Save failed: ${errorMessage}`);
+                  if (!response.ok) {
+                    throw new Error(result.error || `Failed to save checklist (${response.status})`);
                   }
                 }}
               />
@@ -302,73 +276,24 @@ export default function ClientDashboard() {
           </div>
         </ErrorBoundary>
 
-        {/* Body Metrics - Dynamically loaded */}
-        <ErrorBoundary fallback={
-          <div className="card p-6">
-            <div className="flex items-center space-x-2 text-yellow-600">
-              <AlertCircle className="w-5 h-5" />
-              <h3 className="font-medium">Body metrics temporarily unavailable</h3>
-            </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              The body metrics component failed to load. Please refresh the page.
+
+        {/* Footer with Version */}
+        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800">
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">
+              Health Tracking Pro v1.1.0
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Last updated: {new Date().toLocaleDateString('pl-PL', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
             </p>
           </div>
-        }>
-          <div className="card p-6">
-            <Suspense fallback={
-              <div className="space-y-4">
-                <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-8 rounded"></div>
-                <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-48 rounded"></div>
-              </div>
-            }>
-              <BodyMetricsForm
-                user={selectedUser}
-                onSave={async (data) => {
-                  try {
-                    const response = await fetch('/api/health-data', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        user: data.user,
-                        date: data.date,
-                        metrics: {
-                          weight: data.weight,
-                          bodyFat: data.bodyFat,
-                          muscleMass: data.muscleMass,
-                          waterPercentage: data.waterPercentage,
-                          steps: data.steps,
-                          heartRate: data.heartRate,
-                          sleepScore: data.sleepScore,
-                        }
-                      }),
-                    });
-
-                    if (!response.ok) {
-                      throw new Error('Failed to save body metrics');
-                    }
-
-                    console.log('Body metrics saved successfully');
-                  } catch (error) {
-                    console.error('Error saving body metrics:', error);
-                    setDataError('Failed to save body metrics data');
-                  }
-                }}
-              />
-            </Suspense>
-          </div>
-        </ErrorBoundary>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-4">
-          <button className="btn-secondary flex items-center justify-center space-x-2">
-            <Calendar className="w-4 h-4" />
-            <span>Zobacz kalendarz</span>
-          </button>
-          <button className="btn-secondary flex items-center justify-center space-x-2">
-            <TrendingUp className="w-4 h-4" />
-            <span>Statystyki</span>
-          </button>
-            </div>
+        </div>
           </div>
         </main>
       </div>

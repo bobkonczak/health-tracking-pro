@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import ClientDashboard from './ClientDashboard';
+import DashboardPage from './dashboard/page';
 
 export const metadata: Metadata = {
   title: 'Health Tracking Pro - Dashboard',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
-  return <ClientDashboard />;
+  return <DashboardPage />;
 }

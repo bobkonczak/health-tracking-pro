@@ -214,8 +214,8 @@ export function useCompetitionData(): CompetitionData & { refetch: () => Promise
         setData({
           bobWeekly: 84,
           paulaWeekly: 76,
-          bobToday: 12,
-          paulaToday: 8,
+          bobToday: 10,
+          paulaToday: 1,
           bobStreak: 5,
           paulaStreak: 3,
           weekLeader: 'Bob',

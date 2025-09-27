@@ -117,7 +117,7 @@ function FastingTimeInput({ value, onChange, onPointsChange }: FastingTimeInputP
 interface DailyChecklistProps {
   user: User;
   date?: Date;
-  onSave?: (data: DailyEntry) => void;
+  onSave?: (data: DailyEntry) => Promise<void>;
 }
 
 export function DailyChecklist({ user, date = new Date(), onSave }: DailyChecklistProps) {
@@ -137,6 +137,9 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
     weighedIn: false,
     caloriesTracked: false,
   });
+
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [saveMessage, setSaveMessage] = useState<string>('');
 
   // Update checklist when user changes or data loads
   useEffect(() => {
@@ -172,9 +175,14 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
     setChecklist(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSave = () => {
-    if (onSave) {
-      onSave({
+  const handleSave = async () => {
+    if (!onSave) return;
+
+    setSaveState('saving');
+    setSaveMessage('');
+
+    try {
+      await onSave({
         date: date.toISOString().split('T')[0],
         user,
         checklist,
@@ -183,6 +191,25 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
         totalPoints,
         streak,
       });
+
+      setSaveState('success');
+      setSaveMessage('Zapisane!');
+
+      // Reset to idle after 3 seconds
+      setTimeout(() => {
+        setSaveState('idle');
+        setSaveMessage('');
+      }, 3000);
+
+    } catch (error) {
+      setSaveState('error');
+      setSaveMessage(error instanceof Error ? error.message : 'Błąd podczas zapisywania');
+
+      // Reset to idle after 5 seconds
+      setTimeout(() => {
+        setSaveState('idle');
+        setSaveMessage('');
+      }, 5000);
     }
   };
 
@@ -332,12 +359,43 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
         </div>
       </div>
 
+      {/* Success/Error Message */}
+      {saveMessage && (
+        <div className={cn(
+          'p-3 rounded-lg text-center font-medium',
+          saveState === 'success' && 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200',
+          saveState === 'error' && 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200'
+        )}>
+          {saveMessage}
+        </div>
+      )}
+
       {/* Save Button */}
       <button
         onClick={handleSave}
-        className="w-full btn-primary py-3 text-lg font-semibold"
+        disabled={saveState === 'saving'}
+        className={cn(
+          'w-full py-3 text-lg font-semibold transition-all',
+          saveState === 'saving'
+            ? 'bg-gray-400 text-white cursor-not-allowed'
+            : saveState === 'success'
+            ? 'bg-green-600 hover:bg-green-700 text-white'
+            : 'btn-primary'
+        )}
       >
-        Zapisz dzień ({totalPoints} pkt)
+        {saveState === 'saving' ? (
+          <span className="flex items-center justify-center space-x-2">
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <span>Zapisywanie...</span>
+          </span>
+        ) : saveState === 'success' ? (
+          <span className="flex items-center justify-center space-x-2">
+            <Check className="w-5 h-5" />
+            <span>Zapisane!</span>
+          </span>
+        ) : (
+          `Zapisz dzień (${totalPoints} pkt)`
+        )}
       </button>
     </div>
   );

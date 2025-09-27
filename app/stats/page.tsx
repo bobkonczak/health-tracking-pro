@@ -1,216 +1,479 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Header } from '@/src/components/layout/Header';
-import { TrendingUp, Calendar, Trophy, Target, BarChart3, Users } from 'lucide-react';
-import { User } from '@/src/types';
-import { useHealthData, useCompetitionData } from '@/src/hooks/useHealthData';
+import {
+  BarChart3, Calendar, TrendingUp, X, Check, Flame
+} from 'lucide-react';
+import { User, DailyEntry } from '@/src/types';
+import { useHealthData } from '@/src/hooks/useHealthData';
+import { cn } from '@/src/lib/utils';
 
-export default function StatsPage() {
+// Generate all days in the challenge period
+function generateChallengeDays() {
+  const startDate = new Date('2024-09-15');
+  const endDate = new Date('2024-12-24');
+  const days = [];
+
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    days.push(new Date(d));
+  }
+
+  return days;
+}
+
+// Get color for points value (0-16 scale)
+function getPointColor(points: number): string {
+  const colors = [
+    '#374151', // 0 - gray-700
+    '#4B5563', // 1 - gray-600
+    '#6B7280', // 2 - gray-500
+    '#9CA3AF', // 3 - gray-400
+    '#FCA5A5', // 4 - red-300
+    '#F87171', // 5 - red-400
+    '#FBBF24', // 6 - yellow-400
+    '#FCD34D', // 7 - yellow-300
+    '#FDE047', // 8 - yellow-200
+    '#BEF264', // 9 - lime-300
+    '#A3E635', // 10 - lime-400
+    '#84CC16', // 11 - lime-500
+    '#65A30D', // 12 - lime-600
+    '#10B981', // 13 - emerald-500
+    '#059669', // 14 - emerald-600
+    '#047857', // 15 - emerald-700
+    '#FFD700', // 16 - gold
+  ];
+
+  return colors[Math.min(points, 16)] || colors[0];
+}
+
+interface DayDetailModalProps {
+  date: Date;
+  dayNumber: number;
+  entry: DailyEntry | null;
+  onClose: () => void;
+  onEdit: () => void;
+}
+
+function DayDetailModal({ date, dayNumber, entry, onClose, onEdit }: DayDetailModalProps) {
+  const dateStr = date.toLocaleDateString('pl-PL', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="text-lg font-semibold">Day {dayNumber} of 101</h3>
+            <p className="text-sm text-muted-foreground">{dateStr}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {entry ? (
+          <div className="space-y-4">
+            {/* Points Summary */}
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-muted-foreground">Total Points</span>
+                <span className="text-2xl font-bold">{entry.totalPoints}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Streak</span>
+                <span className="font-medium flex items-center">
+                  <Flame className="w-4 h-4 mr-1 text-orange-500" />
+                  {entry.streak} days
+                </span>
+              </div>
+            </div>
+
+            {/* Checklist Details */}
+            <div>
+              <h4 className="font-medium mb-2">Completed Tasks</h4>
+              <div className="space-y-1 text-sm">
+                {entry.checklist.noSugar && (
+                  <div className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-600" />
+                    No sugar (1 pt)
+                  </div>
+                )}
+                {entry.checklist.noAlcohol && (
+                  <div className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-600" />
+                    No alcohol (1 pt)
+                  </div>
+                )}
+                {entry.checklist.training && (
+                  <div className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-600" />
+                    Training (2 pts)
+                  </div>
+                )}
+                {entry.checklist.morningRoutine && (
+                  <div className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-600" />
+                    Morning routine (3 pts)
+                  </div>
+                )}
+                {entry.checklist.steps10k && (
+                  <div className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-600" />
+                    10k+ steps (2 pts)
+                  </div>
+                )}
+                {entry.checklist.fastingTime && (
+                  <div className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-600" />
+                    Fasting: {entry.checklist.fastingTime} ({entry.checklist.fastingPoints} pts)
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Notes */}
+            {entry.notes && (
+              <div>
+                <h4 className="font-medium mb-2">Notes</h4>
+                <p className="text-sm text-muted-foreground">{entry.notes}</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground mb-4">No data recorded for this day</p>
+            <button
+              onClick={onEdit}
+              className="btn-primary px-4 py-2 text-sm"
+            >
+              Add Entry
+            </button>
+          </div>
+        )}
+
+        {entry && (
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={onEdit}
+              className="btn-secondary px-4 py-2 text-sm"
+            >
+              Edit Entry
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function EnhancedStatsPage() {
   const [selectedUser, setSelectedUser] = useState<User>('Bob');
-  const { todayEntry, recentEntries, streak, weeklyTotal, isLoading } = useHealthData(selectedUser);
-  const competitionData = useCompetitionData();
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [filterLevel, setFilterLevel] = useState<'all' | 'weak' | 'average' | 'good' | 'excellent'>('all');
+
+  const { recentEntries } = useHealthData(selectedUser);
+
+  // Generate mock data for demonstration - replace with real data
+  const challengeDays = useMemo(() => generateChallengeDays(), []);
+
+  // Create a map of date to entry for quick lookup
+  const entriesMap = useMemo(() => {
+    const map = new Map<string, DailyEntry>();
+    recentEntries.forEach(entry => {
+      map.set(entry.date, entry);
+    });
+
+    // Add mock data for demonstration
+    challengeDays.forEach((date, index) => {
+      const dateStr = date.toISOString().split('T')[0];
+      if (!map.has(dateStr) && Math.random() > 0.3) {
+        const points = Math.floor(Math.random() * 17);
+        map.set(dateStr, {
+          id: `mock-${index}`,
+          date: dateStr,
+          user: selectedUser,
+          checklist: {
+            noSugar: points > 0,
+            noAlcohol: points > 1,
+            fastingTime: points > 5 ? '17:00' : '',
+            fastingPoints: points > 5 ? 3 : 0,
+            training: points > 7,
+            morningRoutine: points > 10,
+            sauna: false,
+            steps10k: points > 3,
+            supplements: points > 2,
+            weighedIn: points > 4,
+            caloriesTracked: points > 6,
+          },
+          dailyPoints: points,
+          bonusPoints: index > 3 ? 1 : 0,
+          totalPoints: points + (index > 3 ? 1 : 0),
+          streak: Math.min(index + 1, 7),
+          notes: ''
+        });
+      }
+    });
+
+    return map;
+  }, [recentEntries, challengeDays, selectedUser]);
 
   // Calculate statistics
-  const last7Days = recentEntries.slice(0, 7);
-  const avgDailyPoints = last7Days.length > 0
-    ? Math.round(last7Days.reduce((sum, entry) => sum + (entry.totalPoints || 0), 0) / last7Days.length)
-    : 0;
+  const stats = useMemo(() => {
+    const entries = Array.from(entriesMap.values());
+    const totalDays = challengeDays.length;
+    const completedDays = entries.length;
+    const totalPoints = entries.reduce((sum, e) => sum + (e.totalPoints || 0), 0);
+    const avgPoints = completedDays > 0 ? (totalPoints / completedDays).toFixed(1) : '0';
 
-  const completionRate = last7Days.length > 0
-    ? Math.round((last7Days.filter(entry => (entry.totalPoints || 0) >= 10).length / last7Days.length) * 100)
-    : 0;
+    const bestDay = entries.reduce((best, entry) =>
+      (entry.totalPoints || 0) > (best?.totalPoints || 0) ? entry : best
+    , entries[0]);
 
-  const bestDay = last7Days.reduce((best, entry) =>
-    (entry.totalPoints || 0) > (best.totalPoints || 0) ? entry : best,
-    last7Days[0] || { totalPoints: 0, date: '' }
-  );
+    const worstDay = entries.reduce((worst, entry) =>
+      (entry.totalPoints || 0) < (worst?.totalPoints || 999) ? entry : worst
+    , entries[0]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header selectedUser={selectedUser} onUserChange={setSelectedUser} />
-        <main className="container mx-auto px-4 py-6 md:px-8">
-          <div className="space-y-6">
-            <h1 className="text-3xl font-bold">📊 Statystyki</h1>
-            <div className="text-center">Loading statistics...</div>
-          </div>
-        </main>
-      </div>
-    );
-  }
+    const currentStreak = entries[entries.length - 1]?.streak || 0;
+    const longestStreak = Math.max(...entries.map(e => e.streak || 0), 0);
+
+    return {
+      totalDays,
+      completedDays,
+      remainingDays: totalDays - completedDays,
+      totalPoints,
+      avgPoints,
+      bestDay,
+      worstDay,
+      currentStreak,
+      longestStreak,
+      completionRate: ((completedDays / totalDays) * 100).toFixed(1)
+    };
+  }, [entriesMap, challengeDays]);
+
+  const handleDayClick = (date: Date) => {
+    setSelectedDate(date);
+  };
+
+  const handleEditDay = () => {
+    // TODO: Implement edit functionality
+    console.log('Edit day:', selectedDate);
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <Header selectedUser={selectedUser} onUserChange={setSelectedUser} />
+
       <main className="container mx-auto px-4 py-6 md:px-8">
         <div className="space-y-6">
-          {/* Header */}
-          <div className="text-center md:text-left">
-            <h1 className="text-3xl font-bold flex items-center">
-              <BarChart3 className="w-8 h-8 mr-3" />
-              📊 Statystyki
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Analiza wyników dla <span className={selectedUser === 'Bob' ? 'text-bob font-semibold' : 'text-paula font-semibold'}>{selectedUser}</span>
-            </p>
-          </div>
-
-          {/* User Selection */}
-          <div className="flex space-x-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg max-w-md">
-            <button
-              onClick={() => setSelectedUser('Bob')}
-              className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
-                selectedUser === 'Bob'
-                  ? 'bg-bob text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-              }`}
-            >
-              Bob&apos;s Stats
-            </button>
-            <button
-              onClick={() => setSelectedUser('Paula')}
-              className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
-                selectedUser === 'Paula'
-                  ? 'bg-paula text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-              }`}
-            >
-              Paula&apos;s Stats
-            </button>
-          </div>
-
-          {/* Quick Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="card p-4 text-center">
-              <Trophy className="w-6 h-6 mx-auto mb-2 text-gold" />
-              <p className="text-sm text-muted-foreground">Obecny streak</p>
-              <p className="text-2xl font-bold">{streak}</p>
-              <p className="text-xs text-muted-foreground">dni</p>
+          {/* Page Header */}
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold flex items-center">
+                <BarChart3 className="w-8 h-8 mr-3" />
+                Statistics & History
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                101-day challenge: Sep 15 - Dec 24, 2024
+              </p>
             </div>
-
-            <div className="card p-4 text-center">
-              <Target className="w-6 h-6 mx-auto mb-2 text-green-600" />
-              <p className="text-sm text-muted-foreground">Dzisiaj</p>
-              <p className="text-2xl font-bold">{todayEntry?.totalPoints || 0}</p>
-              <p className="text-xs text-muted-foreground">punktów</p>
-            </div>
-
-            <div className="card p-4 text-center">
-              <Calendar className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-              <p className="text-sm text-muted-foreground">Ten tydzień</p>
-              <p className="text-2xl font-bold">{weeklyTotal}</p>
-              <p className="text-xs text-muted-foreground">punktów</p>
-            </div>
-
-            <div className="card p-4 text-center">
-              <TrendingUp className="w-6 h-6 mx-auto mb-2 text-purple-600" />
-              <p className="text-sm text-muted-foreground">Średnia (7 dni)</p>
-              <p className="text-2xl font-bold">{avgDailyPoints}</p>
-              <p className="text-xs text-muted-foreground">pkt/dzień</p>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={cn(
+                  'px-3 py-1 rounded-lg',
+                  viewMode === 'calendar' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'
+                )}
+              >
+                <Calendar className="w-4 h-4" />
+              </button>
+              <select
+                value={filterLevel}
+                onChange={(e) => setFilterLevel(e.target.value as 'all' | 'weak' | 'average' | 'good' | 'excellent')}
+                className="px-3 py-1 rounded-lg border dark:bg-gray-800 dark:border-gray-700"
+              >
+                <option value="all">All Days</option>
+                <option value="excellent">Excellent (14-16)</option>
+                <option value="good">Good (10-13)</option>
+                <option value="average">Average (6-9)</option>
+                <option value="weak">Weak (0-5)</option>
+              </select>
             </div>
           </div>
 
-          {/* Performance Analysis */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Weekly Performance */}
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold mb-4">📈 Wydajność (7 dni)</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Wskaźnik ukończenia</span>
-                    <span className="font-semibold">{completionRate}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${selectedUser === 'Bob' ? 'bg-bob' : 'bg-paula'}`}
-                      style={{ width: `${completionRate}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Dni z 10+ punktami
-                  </p>
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Najlepszy dzień</span>
-                    <span className="font-semibold">{bestDay?.totalPoints || 0} pkt</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {bestDay?.date ? new Date(bestDay.date).toLocaleDateString('pl-PL') : 'Brak danych'}
-                  </p>
-                </div>
-              </div>
+          {/* Summary Statistics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="card p-4">
+              <p className="text-sm text-muted-foreground">Progress</p>
+              <p className="text-2xl font-bold">{stats.completedDays}/{stats.totalDays}</p>
+              <p className="text-xs text-muted-foreground">{stats.completionRate}%</p>
             </div>
-
-            {/* Competition Status */}
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold mb-4 flex items-center">
-                <Users className="w-5 h-5 mr-2" />
-                🏆 Rywalizacja
-              </h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Bob (tydzień)</span>
-                  <span className="font-bold text-bob">{competitionData.bobWeekly} pkt</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Paula (tydzień)</span>
-                  <span className="font-bold text-paula">{competitionData.paulaWeekly} pkt</span>
-                </div>
-                <div className="border-t pt-3">
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Prowadzi</p>
-                    <p className={`text-lg font-bold ${competitionData.weekLeader === 'Bob' ? 'text-bob' : 'text-paula'}`}>
-                      {competitionData.weekLeader}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      +{Math.abs(competitionData.bobWeekly - competitionData.paulaWeekly)} pkt przewagi
-                    </p>
-                  </div>
-                </div>
-              </div>
+            <div className="card p-4">
+              <p className="text-sm text-muted-foreground">Avg Points</p>
+              <p className="text-2xl font-bold">{stats.avgPoints}</p>
+              <p className="text-xs text-muted-foreground">per day</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-sm text-muted-foreground">Best Day</p>
+              <p className="text-2xl font-bold">{stats.bestDay?.totalPoints || 0}</p>
+              <p className="text-xs text-muted-foreground">points</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-sm text-muted-foreground">Current Streak</p>
+              <p className="text-2xl font-bold flex items-center">
+                <Flame className="w-5 h-5 mr-1 text-orange-500" />
+                {stats.currentStreak}
+              </p>
+              <p className="text-xs text-muted-foreground">days</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-sm text-muted-foreground">Longest Streak</p>
+              <p className="text-2xl font-bold">{stats.longestStreak}</p>
+              <p className="text-xs text-muted-foreground">days</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-sm text-muted-foreground">Total Points</p>
+              <p className="text-2xl font-bold">{stats.totalPoints}</p>
+              <p className="text-xs text-muted-foreground">earned</p>
             </div>
           </div>
 
-          {/* Recent Activity */}
+          {/* Calendar Pixel View */}
           <div className="card p-6">
-            <h3 className="text-lg font-semibold mb-4">📅 Ostatnie dni</h3>
-            <div className="space-y-3">
-              {last7Days.length > 0 ? (
-                last7Days.map((entry, index) => (
-                  <div key={entry.id || index} className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
-                    <div>
-                      <p className="font-medium">{new Date(entry.date).toLocaleDateString('pl-PL', {
-                        weekday: 'long',
-                        day: 'numeric',
-                        month: 'short'
-                      })}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Dzienny: {entry.dailyPoints} + Bonus: {entry.bonusPoints}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className={`text-lg font-bold ${(entry.totalPoints || 0) >= 10 ? 'text-green-600' : 'text-gray-500'}`}>
-                        {entry.totalPoints} pkt
-                      </p>
-                      {entry.streak > 0 && (
-                        <p className="text-xs text-orange-500">🔥 {entry.streak}</p>
-                      )}
+            <div className="mb-4 flex justify-between items-center">
+              <h2 className="text-lg font-semibold">Challenge Calendar</h2>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 text-sm">
+                  <div className="w-4 h-4 bg-gray-700 rounded"></div>
+                  <span>0</span>
+                  <div className="w-4 h-4 bg-yellow-400 rounded"></div>
+                  <span>6</span>
+                  <div className="w-4 h-4 bg-lime-500 rounded"></div>
+                  <span>11</span>
+                  <div className="w-4 h-4 bg-emerald-600 rounded"></div>
+                  <span>14</span>
+                  <div className="w-4 h-4 bg-gold rounded"></div>
+                  <span>16</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Month Headers */}
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                <div key={day} className="text-xs text-center text-muted-foreground font-medium">
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-1">
+              {/* Add empty cells for alignment */}
+              {[...Array(new Date('2024-09-15').getDay() === 0 ? 6 : new Date('2024-09-15').getDay() - 1)].map((_, i) => (
+                <div key={`empty-${i}`} className="aspect-square" />
+              ))}
+
+              {/* Render challenge days */}
+              {challengeDays.map((date, index) => {
+                const dateStr = date.toISOString().split('T')[0];
+                const entry = entriesMap.get(dateStr);
+                const points = entry?.totalPoints || 0;
+                const dayNumber = index + 1;
+                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+
+                // Apply filter
+                if (filterLevel !== 'all') {
+                  const level = points >= 14 ? 'excellent' :
+                               points >= 10 ? 'good' :
+                               points >= 6 ? 'average' : 'weak';
+                  if (level !== filterLevel && entry) {
+                    return (
+                      <div
+                        key={dateStr}
+                        className="aspect-square rounded opacity-20"
+                        style={{ backgroundColor: '#374151' }}
+                      />
+                    );
+                  }
+                }
+
+                return (
+                  <div
+                    key={dateStr}
+                    className={cn(
+                      'aspect-square rounded cursor-pointer transition-all hover:scale-110 hover:z-10 relative group',
+                      isWeekend && 'ring-1 ring-gray-400 dark:ring-gray-600'
+                    )}
+                    style={{ backgroundColor: entry ? getPointColor(points) : '#1F2937' }}
+                    onClick={() => handleDayClick(date)}
+                  >
+                    {/* Hover tooltip */}
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-20">
+                      Day {dayNumber}: {entry ? `${points} pts` : 'No data'}
+                      {entry?.streak ? `, ${entry.streak} streak` : ''}
                     </div>
                   </div>
-                ))
-              ) : (
-                <p className="text-center text-muted-foreground py-8">
-                  Brak danych z ostatnich 7 dni
-                </p>
-              )}
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Weekly Trends */}
+          <div className="card p-6">
+            <h2 className="text-lg font-semibold mb-4 flex items-center">
+              <TrendingUp className="w-5 h-5 mr-2" />
+              Weekly Performance
+            </h2>
+            <div className="space-y-3">
+              {[...Array(15)].map((_, weekIndex) => {
+                const weekStart = weekIndex * 7;
+                const weekEnd = Math.min(weekStart + 7, challengeDays.length);
+                const weekDays = challengeDays.slice(weekStart, weekEnd);
+                const weekPoints = weekDays.reduce((sum, date) => {
+                  const entry = entriesMap.get(date.toISOString().split('T')[0]);
+                  return sum + (entry?.totalPoints || 0);
+                }, 0);
+                const maxPoints = (weekEnd - weekStart) * 16;
+                const percentage = (weekPoints / maxPoints) * 100;
+
+                return (
+                  <div key={weekIndex}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>Week {weekIndex + 1}</span>
+                      <span className="font-medium">{weekPoints} / {maxPoints}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div
+                        className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-green-500"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
       </main>
+
+      {/* Day Detail Modal */}
+      {selectedDate && (
+        <DayDetailModal
+          date={selectedDate}
+          dayNumber={challengeDays.findIndex(d =>
+            d.toISOString().split('T')[0] === selectedDate.toISOString().split('T')[0]
+          ) + 1}
+          entry={entriesMap.get(selectedDate.toISOString().split('T')[0]) || null}
+          onClose={() => setSelectedDate(null)}
+          onEdit={handleEditDay}
+        />
+      )}
     </div>
   );
 }
