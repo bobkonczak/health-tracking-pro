@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/src/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/src/lib/supabase';
 import { User, DailyEntry } from '@/src/types';
 
 export interface HealthData {
@@ -40,13 +40,23 @@ export function useHealthData(user: User): HealthData & { refetch: () => Promise
     try {
       setData(prev => ({ ...prev, isLoading: true, error: null }));
 
+      // Check if Supabase is properly configured
+      if (!isSupabaseConfigured()) {
+        setData(prev => ({
+          ...prev,
+          isLoading: false,
+          error: 'Database configuration missing'
+        }));
+        return;
+      }
+
       const today = new Date().toISOString().split('T')[0];
       const weekStart = new Date();
       weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Start of week
       const weekStartStr = weekStart.toISOString().split('T')[0];
 
       // Fetch today's entry
-      const { data: todayData, error: todayError } = await supabase
+      const { data: todayData, error: todayError } = await supabase!
         .from('daily_entries')
         .select('*')
         .eq('user_name', user)
@@ -58,7 +68,7 @@ export function useHealthData(user: User): HealthData & { refetch: () => Promise
       }
 
       // Fetch recent entries (last 7 days)
-      const { data: recentData, error: recentError } = await supabase
+      const { data: recentData, error: recentError } = await supabase!
         .from('daily_entries')
         .select('*')
         .eq('user_name', user)
@@ -69,7 +79,7 @@ export function useHealthData(user: User): HealthData & { refetch: () => Promise
       if (recentError) throw recentError;
 
       // Fetch current streak
-      const { data: streakData, error: streakError } = await supabase
+      const { data: streakData, error: streakError } = await supabase!
         .from('streaks')
         .select('current_streak')
         .eq('user_name', user)
@@ -153,13 +163,23 @@ export function useCompetitionData(): CompetitionData & { refetch: () => Promise
     try {
       setData(prev => ({ ...prev, isLoading: true, error: null }));
 
+      // Check if Supabase is properly configured
+      if (!isSupabaseConfigured()) {
+        setData(prev => ({
+          ...prev,
+          isLoading: false,
+          error: 'Database configuration missing'
+        }));
+        return;
+      }
+
       const today = new Date().toISOString().split('T')[0];
       const weekStart = new Date();
       weekStart.setDate(weekStart.getDate() - weekStart.getDay());
       const weekStartStr = weekStart.toISOString().split('T')[0];
 
       // Fetch weekly data for both users
-      const { data: weeklyData, error: weeklyError } = await supabase
+      const { data: weeklyData, error: weeklyError } = await supabase!
         .from('daily_entries')
         .select('user_name, total_points, date')
         .gte('date', weekStartStr)
@@ -168,7 +188,7 @@ export function useCompetitionData(): CompetitionData & { refetch: () => Promise
       if (weeklyError) throw weeklyError;
 
       // Fetch today's data for both users
-      const { data: todayData, error: todayError } = await supabase
+      const { data: todayData, error: todayError } = await supabase!
         .from('daily_entries')
         .select('user_name, total_points')
         .eq('date', today);
@@ -176,7 +196,7 @@ export function useCompetitionData(): CompetitionData & { refetch: () => Promise
       if (todayError) throw todayError;
 
       // Fetch streaks for both users
-      const { data: streakData, error: streakError } = await supabase
+      const { data: streakData, error: streakError } = await supabase!
         .from('streaks')
         .select('user_name, current_streak');
 
@@ -237,7 +257,12 @@ export function useCompetitionData(): CompetitionData & { refetch: () => Promise
 // Real-time subscription hook (optional enhancement)
 export function useRealtimeUpdates(user: User, onUpdate?: () => void) {
   useEffect(() => {
-    const channel = supabase
+    // Don't set up real-time updates if Supabase is not configured
+    if (!isSupabaseConfigured()) {
+      return;
+    }
+
+    const channel = supabase!
       .channel('daily_entries_changes')
       .on('postgres_changes',
         {
@@ -253,7 +278,7 @@ export function useRealtimeUpdates(user: User, onUpdate?: () => void) {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase!.removeChannel(channel);
     };
   }, [user, onUpdate]);
 }

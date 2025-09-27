@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/src/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/src/lib/supabase';
 import { DailyEntry } from '@/src/types';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if Supabase is properly configured
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json(
+        { success: false, error: 'Database configuration missing' },
+        { status: 503 }
+      );
+    }
     const body: DailyEntry = await request.json();
 
     // Convert DailyEntry to database format
@@ -29,7 +36,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Create or update entry in Supabase
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('daily_entries')
       .upsert([dbEntry], {
         onConflict: 'date,user_name',
@@ -55,6 +62,13 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if Supabase is properly configured
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json(
+        { success: false, error: 'Database configuration missing' },
+        { status: 503 }
+      );
+    }
     const { searchParams } = new URL(request.url);
     const user = searchParams.get('user') as 'Bob' | 'Paula';
     const date = searchParams.get('date');
@@ -69,7 +83,7 @@ export async function GET(request: NextRequest) {
     const targetDate = date || new Date().toISOString().split('T')[0];
 
     // Get entry from Supabase
-    const { data: entry, error } = await supabase
+    const { data: entry, error } = await supabase!
       .from('daily_entries')
       .select('*')
       .eq('user_name', user)
@@ -123,6 +137,13 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Check if Supabase is properly configured
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json(
+        { success: false, error: 'Database configuration missing' },
+        { status: 503 }
+      );
+    }
     const body = await request.json();
     const { id, ...updates } = body;
 
@@ -159,7 +180,7 @@ export async function PUT(request: NextRequest) {
     if (updates.streak !== undefined) dbUpdates.streak = updates.streak;
     if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('daily_entries')
       .update(dbUpdates)
       .eq('id', id)

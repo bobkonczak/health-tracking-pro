@@ -1,23 +1,40 @@
 import { createClient } from '@supabase/supabase-js';
 import { DailyEntry, User } from '@/src/types';
 
-// Supabase configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// Supabase configuration with runtime validation
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create Supabase client only if environment variables are available
+// This prevents build-time failures when environment variables are missing
+export const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
+
+// Helper function to check if Supabase is properly configured
+export function isSupabaseConfigured(): boolean {
+  return !!(supabaseUrl && supabaseAnonKey && supabase);
+}
 
 // Test database connectivity
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function testDatabaseConnection(): Promise<{ success: boolean; message: string; error?: any }> {
   try {
+    // Check if Supabase is properly configured
+    if (!isSupabaseConfigured()) {
+      return {
+        success: false,
+        message: 'Supabase configuration missing',
+        error: 'Environment variables NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY are not set'
+      };
+    }
+
     // Test basic connection by checking if we can query the database
-    const { error } = await supabase
+    const { error } = await supabase!
       .from('daily_entries')
       .select('*', { count: 'exact', head: true });
 
     if (error) {
-      console.error('Database connection error:', error);
       return {
         success: false,
         message: 'Failed to connect to database',
@@ -30,7 +47,6 @@ export async function testDatabaseConnection(): Promise<{ success: boolean; mess
       message: 'Database connection successful'
     };
   } catch (error) {
-    console.error('Unexpected database error:', error);
     return {
       success: false,
       message: 'Unexpected database error',
@@ -190,10 +206,14 @@ function dailyEntryToDbEntry(entry: DailyEntry): Omit<DatabaseEntry, 'id' | 'cre
 
 // Create a new daily entry
 export async function createDailyEntry(entry: DailyEntry) {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase configuration missing');
+  }
+
   try {
     const dbEntry = dailyEntryToDbEntry(entry);
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('daily_entries')
       .insert([dbEntry])
       .select()
@@ -210,6 +230,10 @@ export async function createDailyEntry(entry: DailyEntry) {
 
 // Update an existing daily entry
 export async function updateDailyEntry(id: string, updates: Partial<DailyEntry>) {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase configuration missing');
+  }
+
   try {
     const dbUpdates: Partial<DatabaseEntry> = {};
 
@@ -235,7 +259,7 @@ export async function updateDailyEntry(id: string, updates: Partial<DailyEntry>)
     if (updates.streak !== undefined) dbUpdates.streak = updates.streak;
     if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('daily_entries')
       .update(dbUpdates)
       .eq('id', id)
@@ -253,10 +277,14 @@ export async function updateDailyEntry(id: string, updates: Partial<DailyEntry>)
 
 // Get today's entry for a user
 export async function getTodayEntry(user: User): Promise<DailyEntry | null> {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase configuration missing');
+  }
+
   try {
     const today = new Date().toISOString().split('T')[0];
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('daily_entries')
       .select('*')
       .eq('user', user)
@@ -284,8 +312,12 @@ export async function getDailyEntries(
   startDate: string,
   endDate: string
 ): Promise<DailyEntry[]> {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase configuration missing');
+  }
+
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('daily_entries')
       .select('*')
       .eq('user', user)
@@ -307,8 +339,12 @@ export async function getCompetitionEntries(
   startDate: string,
   endDate: string
 ): Promise<DailyEntry[]> {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase configuration missing');
+  }
+
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('daily_entries')
       .select('*')
       .gte('date', startDate)
@@ -327,7 +363,7 @@ export async function getCompetitionEntries(
 // Body metrics functions
 export async function createBodyMetric(metric: Omit<BodyMetric, 'id' | 'created_at' | 'updated_at'>) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('body_metrics')
       .insert([metric])
       .select()
@@ -348,7 +384,7 @@ export async function getBodyMetrics(
   endDate: string
 ): Promise<BodyMetric[]> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('body_metrics')
       .select('*')
       .eq('user', user)
@@ -367,7 +403,7 @@ export async function getBodyMetrics(
 
 export async function updateBodyMetric(id: string, updates: Partial<BodyMetric>) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('body_metrics')
       .update(updates)
       .eq('id', id)
@@ -386,7 +422,7 @@ export async function updateBodyMetric(id: string, updates: Partial<BodyMetric>)
 // Streak functions
 export async function updateStreak(user: User, currentStreak: number) {
   try {
-    const { data: existing, error: fetchError } = await supabase
+    const { data: existing, error: fetchError } = await supabase!
       .from('streaks')
       .select('*')
       .eq('user', user)
@@ -400,7 +436,7 @@ export async function updateStreak(user: User, currentStreak: number) {
       // Update existing streak
       const newBestStreak = Math.max(existing.best_streak, currentStreak);
 
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('streaks')
         .update({
           current_streak: currentStreak,
@@ -415,7 +451,7 @@ export async function updateStreak(user: User, currentStreak: number) {
       return data;
     } else {
       // Create new streak record
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('streaks')
         .insert([{
           user,
@@ -437,7 +473,7 @@ export async function updateStreak(user: User, currentStreak: number) {
 
 export async function getStreak(user: User): Promise<StreakRecord | null> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('streaks')
       .select('*')
       .eq('user', user)

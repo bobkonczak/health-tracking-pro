@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/src/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/src/lib/supabase';
 
 // iOS Health data webhook endpoint
 export async function POST(request: NextRequest) {
   try {
+    // Check if Supabase is properly configured
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json(
+        { success: false, error: 'Database configuration missing' },
+        { status: 503 }
+      );
+    }
     const body = await request.json();
     console.log('Received health data:', body);
 
@@ -48,7 +55,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Insert or update health metrics
-    const { data: healthData, error: healthError } = await supabase
+    const { data: healthData, error: healthError } = await supabase!
       .from('health_metrics')
       .upsert([healthMetricData], {
         onConflict: 'date,user_name',
@@ -66,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get or create daily entry for auto-updates
-    const { data: initialEntry, error: dailyError } = await supabase
+    const { data: initialEntry, error: dailyError } = await supabase!
       .from('daily_entries')
       .select('*')
       .eq('date', date)
@@ -77,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     // If no daily entry exists, create one
     if (dailyError && dailyError.code === 'PGRST116') {
-      const { data: newEntry, error: createError } = await supabase
+      const { data: newEntry, error: createError } = await supabase!
         .from('daily_entries')
         .insert([{
           date,
@@ -119,7 +126,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (Object.keys(updates).length > 0) {
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabase!
           .from('daily_entries')
           .update(updates)
           .eq('id', initialEntry.id);
@@ -165,6 +172,13 @@ export async function POST(request: NextRequest) {
 // GET endpoint to retrieve recent health data
 export async function GET(request: NextRequest) {
   try {
+    // Check if Supabase is properly configured
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json(
+        { success: false, error: 'Database configuration missing' },
+        { status: 503 }
+      );
+    }
     const { searchParams } = new URL(request.url);
     const user = searchParams.get('user');
     const days = parseInt(searchParams.get('days') || '7');
@@ -185,7 +199,7 @@ export async function GET(request: NextRequest) {
     const endDateStr = endDate.toISOString().split('T')[0];
 
     // Fetch health metrics
-    const { data: healthMetrics, error: healthError } = await supabase
+    const { data: healthMetrics, error: healthError } = await supabase!
       .from('health_metrics')
       .select('*')
       .eq('user_name', user)
@@ -201,7 +215,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch corresponding daily entries
-    const { data: dailyEntries, error: entriesError } = await supabase
+    const { data: dailyEntries, error: entriesError } = await supabase!
       .from('daily_entries')
       .select('*')
       .eq('user_name', user)
@@ -245,7 +259,7 @@ export async function GET(request: NextRequest) {
 async function calculateAndUpdatePoints(entryId: string) {
   try {
     // Get the daily entry
-    const { data: entry, error: fetchError } = await supabase
+    const { data: entry, error: fetchError } = await supabase!
       .from('daily_entries')
       .select('*')
       .eq('id', entryId)
@@ -289,7 +303,7 @@ async function calculateAndUpdatePoints(entryId: string) {
     const totalPoints = dailyPoints + bonusPoints;
 
     // Update the entry with calculated points
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabase!
       .from('daily_entries')
       .update({
         daily_points: dailyPoints,
@@ -312,7 +326,7 @@ async function calculateAndUpdatePoints(entryId: string) {
 async function updateUserStreak(user: string) {
   try {
     // Get recent entries to calculate current streak
-    const { data: recentEntries, error: entriesError } = await supabase
+    const { data: recentEntries, error: entriesError } = await supabase!
       .from('daily_entries')
       .select('date, total_points')
       .eq('user_name', user)
@@ -343,7 +357,7 @@ async function updateUserStreak(user: string) {
     }
 
     // Update streak record
-    const { data: existingStreak, error: streakFetchError } = await supabase
+    const { data: existingStreak, error: streakFetchError } = await supabase!
       .from('streaks')
       .select('*')
       .eq('user_name', user)
@@ -356,7 +370,7 @@ async function updateUserStreak(user: string) {
 
     const bestStreak = existingStreak ? Math.max(existingStreak.best_streak, currentStreak) : currentStreak;
 
-    const { error: streakUpdateError } = await supabase
+    const { error: streakUpdateError } = await supabase!
       .from('streaks')
       .upsert([{
         user_name: user,
@@ -373,7 +387,7 @@ async function updateUserStreak(user: string) {
 
     // Update today's entry with current streak
     const todayStr = today.toISOString().split('T')[0];
-    const { error: entryUpdateError } = await supabase
+    const { error: entryUpdateError } = await supabase!
       .from('daily_entries')
       .update({ streak: currentStreak })
       .eq('user_name', user)

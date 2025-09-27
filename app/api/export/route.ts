@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/src/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/src/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if Supabase is properly configured
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json(
+        { success: false, error: 'Database configuration missing' },
+        { status: 503 }
+      );
+    }
     const { searchParams } = new URL(request.url);
     const user = searchParams.get('user') as 'Bob' | 'Paula' | null;
     const startDate = searchParams.get('startDate');
@@ -27,7 +34,7 @@ export async function GET(request: NextRequest) {
     const finalEndDate = endDate || defaultEndDate;
 
     // Build query for daily entries
-    let dailyEntriesQuery = supabase
+    let dailyEntriesQuery = supabase!
       .from('daily_entries')
       .select('*')
       .gte('date', finalStartDate)
@@ -39,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query for health metrics
-    let healthMetricsQuery = supabase
+    let healthMetricsQuery = supabase!
       .from('health_metrics')
       .select('*')
       .gte('date', finalStartDate)
@@ -208,10 +215,17 @@ function generateCSV(dailyEntries: any[], healthMetrics: any[]): string {
 // Competition export endpoint
 export async function POST(request: NextRequest) {
   try {
+    // Check if Supabase is properly configured
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json(
+        { success: false, error: 'Database configuration missing' },
+        { status: 503 }
+      );
+    }
     const body = await request.json();
     const { type = 'weekly', weekNumber, startDate, endDate } = body;
 
-    let query = supabase.from('competitions').select('*');
+    let query = supabase!.from('competitions').select('*');
 
     if (type === 'weekly' && weekNumber) {
       query = query.eq('week_number', weekNumber);
@@ -226,7 +240,7 @@ export async function POST(request: NextRequest) {
     // Get corresponding daily entries for the competition period
     const competitionEntries = await Promise.all(
       competitions.map(async (comp) => {
-        const { data: entries, error: entriesError } = await supabase
+        const { data: entries, error: entriesError } = await supabase!
           .from('daily_entries')
           .select('*')
           .gte('date', comp.start_date)
