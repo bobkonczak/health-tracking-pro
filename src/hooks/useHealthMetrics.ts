@@ -136,7 +136,10 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
         console.warn('⚠️ Target record not found, proceeding with date-based query...');
       }
 
-      // Get yesterday's date (health data is typically from previous day)
+      // Get today's and yesterday's dates (health data may be from today or yesterday)
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = yesterday.toISOString().split('T')[0];
@@ -146,7 +149,7 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
       dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2);
       const dayBeforeYesterdayStr = dayBeforeYesterday.toISOString().split('T')[0];
 
-      // Fetch health metrics for yesterday and day before for trend calculation
+      // Fetch health metrics for today, yesterday and day before for trend calculation
       // Select ALL available fields to capture complete Withings data
       const { data: healthData, error: healthError } = await supabase!
         .from('health_metrics')
@@ -162,15 +165,16 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
           water_percentage
         `)
         .eq('user_name', user)
-        .in('date', [yesterdayStr, dayBeforeYesterdayStr])
+        .in('date', [todayStr, yesterdayStr, dayBeforeYesterdayStr])
         .order('date', { ascending: false })
-        .limit(2);
+        .limit(3);
 
       if (healthError) throw healthError;
 
       // Debug: Log the actual data we received
       console.log('🔍 DEBUG: Health data from Supabase:', {
         user,
+        todayStr,
         yesterdayStr,
         dayBeforeYesterdayStr,
         healthData,
@@ -188,13 +192,13 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
         console.warn('No user profile found, using default targets');
       }
 
-      // Process health data
-      const yesterdayData = healthData?.[0];
-      const dayBeforeData = healthData?.[1];
+      // Process health data - use most recent data (should be today's data)
+      const latestData = healthData?.[0];
+      const previousData = healthData?.[1];
 
-      if (!yesterdayData) {
+      if (!latestData) {
         // NO MOCK DATA - Fail with clear error message
-        throw new Error(`CRITICAL: No health data found for ${user} on ${yesterdayStr}. Database connection working but no records exist.`);
+        throw new Error(`CRITICAL: No health data found for ${user} on ${todayStr} or ${yesterdayStr}. Database connection working but no records exist.`);
       }
 
       // Calculate trends (yesterday vs day before)
@@ -205,22 +209,22 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
 
       // Debug: Log the individual data points we're processing
       console.log('🔍 DEBUG: Processing individual metrics:', {
-        weight: yesterdayData.weight,
-        body_fat: yesterdayData.body_fat,
-        muscle_mass: yesterdayData.muscle_mass,
-        water_percentage: yesterdayData.water_percentage,
-        bone_mass: yesterdayData.bone_mass,
-        visceral_fat: yesterdayData.visceral_fat,
-        steps: yesterdayData.steps,
-        heart_rate: yesterdayData.heart_rate,
-        sleep_score: yesterdayData.sleep_score,
-        measurement_type_91: yesterdayData.measurement_type_91,
-        measurement_type_155: yesterdayData.measurement_type_155,
-        data_source: yesterdayData.data_source,
-        last_synced: yesterdayData.last_synced,
-        date: yesterdayData.date,
-        allFields: Object.keys(yesterdayData),
-        totalFields: Object.keys(yesterdayData).length
+        weight: latestData.weight,
+        body_fat: latestData.body_fat,
+        muscle_mass: latestData.muscle_mass,
+        water_percentage: latestData.water_percentage,
+        bone_mass: latestData.bone_mass,
+        visceral_fat: latestData.visceral_fat,
+        steps: latestData.steps,
+        heart_rate: latestData.heart_rate,
+        sleep_score: latestData.sleep_score,
+        measurement_type_91: latestData.measurement_type_91,
+        measurement_type_155: latestData.measurement_type_155,
+        data_source: latestData.data_source,
+        last_synced: latestData.last_synced,
+        date: latestData.date,
+        allFields: Object.keys(latestData),
+        totalFields: Object.keys(latestData).length
       });
 
       // Helper function to create health metric with proper null handling
@@ -236,71 +240,71 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
         target,
         trend,
         hasData: value !== null && value !== undefined,
-        dataSource: dataSource || yesterdayData.data_source || 'withings',
-        lastUpdated: yesterdayData.date
+        dataSource: dataSource || latestData.data_source || 'withings',
+        lastUpdated: latestData.date
       });
 
       const healthMetrics: HealthMetrics = {
         weight: createHealthMetric(
-          yesterdayData.weight,
+          latestData.weight,
           'kg',
           profileData?.target_weight || (user === 'Bob' ? 75 : 65),
-          calculateTrend(yesterdayData.weight, dayBeforeData?.weight)
+          calculateTrend(latestData.weight, previousData?.weight)
         ),
         bodyFat: createHealthMetric(
-          yesterdayData.body_fat,
+          latestData.body_fat,
           '%',
           profileData?.target_body_fat || (user === 'Bob' ? 15 : 18),
-          calculateTrend(yesterdayData.body_fat, dayBeforeData?.body_fat)
+          calculateTrend(latestData.body_fat, previousData?.body_fat)
         ),
         muscleMass: createHealthMetric(
-          yesterdayData.muscle_mass,
+          latestData.muscle_mass,
           'kg',
           profileData?.target_muscle_mass || (user === 'Bob' ? 70 : 48),
-          calculateTrend(yesterdayData.muscle_mass, dayBeforeData?.muscle_mass)
+          calculateTrend(latestData.muscle_mass, previousData?.muscle_mass)
         ),
         waterPercentage: createHealthMetric(
-          yesterdayData.water_percentage,
+          latestData.water_percentage,
           '%',
           undefined,
-          calculateTrend(yesterdayData.water_percentage, dayBeforeData?.water_percentage)
+          calculateTrend(latestData.water_percentage, previousData?.water_percentage)
         ),
         boneMass: createHealthMetric(
-          yesterdayData.bone_mass,
+          latestData.bone_mass,
           'kg',
           undefined,
-          calculateTrend(yesterdayData.bone_mass, dayBeforeData?.bone_mass)
+          calculateTrend(latestData.bone_mass, previousData?.bone_mass)
         ),
         visceralFat: createHealthMetric(
-          yesterdayData.visceral_fat,
+          latestData.visceral_fat,
           'level',
           undefined,
-          calculateTrend(yesterdayData.visceral_fat, dayBeforeData?.visceral_fat)
+          calculateTrend(latestData.visceral_fat, previousData?.visceral_fat)
         ),
         steps: createHealthMetric(
-          yesterdayData.steps,
+          latestData.steps,
           'steps',
           10000
         ),
         heartRate: createHealthMetric(
-          yesterdayData.heart_rate,
+          latestData.heart_rate,
           'bpm'
         ),
         sleepScore: createHealthMetric(
-          yesterdayData.sleep_score,
+          latestData.sleep_score,
           '/100'
         ),
         unknownType91: createHealthMetric(
-          yesterdayData.measurement_type_91,
+          latestData.measurement_type_91,
           'unknown'
         ),
         unknownType155: createHealthMetric(
-          yesterdayData.measurement_type_155,
+          latestData.measurement_type_155,
           'unknown'
         ),
         isLoading: false,
         error: null,
-        lastSynced: yesterdayData.last_synced
+        lastSynced: latestData.last_synced
       };
 
       // Data validation: check for impossible values and log warnings
@@ -359,7 +363,7 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
           .length,
         dataSource: healthMetrics.weight.dataSource,
         lastSynced: healthMetrics.lastSynced,
-        date: yesterdayData.date
+        date: latestData.date
       };
 
       console.log('🔍 DEBUG: Final health metrics calculated:', healthMetrics);
