@@ -82,7 +82,7 @@ export default function ClientDashboard() {
         <div className="text-center md:text-left">
           <h1 className="text-3xl font-bold">Dzień dobry! 💪</h1>
           <p className="text-muted-foreground mt-2">
-            Dzień {Math.floor((new Date().getTime() - new Date('2024-09-15').getTime()) / (1000 * 60 * 60 * 24)) + 1} z 101 challenge. Keep pushing!
+            Dzień {Math.floor((Date.now() - new Date('2024-09-15').getTime()) / (1000 * 60 * 60 * 24)) + 1} z 101 challenge. Keep pushing!
             <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
               ✓ App running at {typeof window !== 'undefined' ? window.location.hostname : 'health.konczak.io'}
             </span>
@@ -260,6 +260,9 @@ export default function ClientDashboard() {
                 user={selectedUser}
                 onSave={async (data) => {
                   try {
+                    console.log('🚀 Frontend: Starting checklist save for user:', data.user);
+                    console.log('📝 Frontend: Data to save:', JSON.stringify(data, null, 2));
+
                     setDataError(null); // Clear any previous errors
 
                     const response = await fetch('/api/checklist', {
@@ -268,15 +271,20 @@ export default function ClientDashboard() {
                       body: JSON.stringify(data),
                     });
 
+                    console.log('📡 Frontend: Response status:', response.status, response.statusText);
+                    console.log('📡 Frontend: Response headers:', Object.fromEntries(response.headers.entries()));
+
                     const result = await response.json();
+                    console.log('📨 Frontend: Response body:', result);
 
                     if (!response.ok) {
-                      throw new Error(result.error || 'Failed to save checklist');
+                      console.error('❌ Frontend: API returned error status:', response.status);
+                      throw new Error(result.error || `Failed to save checklist (${response.status})`);
                     }
 
                     // Show success feedback
                     setDataError(null);
-                    console.log('✅ Checklist saved successfully for', data.user, ':', result);
+                    console.log('✅ Frontend: Checklist saved successfully for', data.user, ':', result);
 
                     // Optionally show a temporary success message
                     setTimeout(() => {
@@ -284,7 +292,7 @@ export default function ClientDashboard() {
                     }, 2000);
 
                   } catch (error) {
-                    console.error('❌ Error saving checklist:', error);
+                    console.error('❌ Frontend: Error saving checklist:', error);
                     const errorMessage = error instanceof Error ? error.message : 'Failed to save checklist data';
                     setDataError(`Save failed: ${errorMessage}`);
                   }

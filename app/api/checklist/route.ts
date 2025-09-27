@@ -3,11 +3,16 @@ import { supabase, isSupabaseConfigured } from '@/src/lib/supabase';
 import { DailyEntry } from '@/src/types';
 
 export async function POST(request: NextRequest) {
+  console.log('🔍 POST /api/checklist - Request received');
+
   try {
     const body: DailyEntry = await request.json();
+    console.log('📝 Request body:', JSON.stringify(body, null, 2));
+    console.log('🔧 Supabase configured:', isSupabaseConfigured());
 
     // Check if Supabase is properly configured - if not, use mock response
     if (!isSupabaseConfigured()) {
+      console.log('⚠️ Using mock mode - no database configured');
       return NextResponse.json({
         success: true,
         data: {
@@ -40,6 +45,8 @@ export async function POST(request: NextRequest) {
       notes: body.notes,
     };
 
+    console.log('💾 Database entry to save:', JSON.stringify(dbEntry, null, 2));
+
     // Create or update entry in Supabase
     const { data, error } = await supabase!
       .from('daily_entries')
@@ -50,16 +57,25 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      throw error;
+    }
+
+    console.log('✅ Successfully saved to database:', data);
 
     return NextResponse.json({
       success: true,
       data: data,
     });
   } catch (error) {
-    console.error('Error saving checklist:', error);
+    console.error('❌ Error saving checklist:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to save checklist' },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to save checklist',
+        details: error
+      },
       { status: 500 }
     );
   }
