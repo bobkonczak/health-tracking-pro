@@ -3,6 +3,8 @@
 import React, { useState, Suspense } from 'react';
 import { Trophy, TrendingUp, Target, Flame, Calendar, Users, AlertCircle } from 'lucide-react';
 import { User } from '@/src/types';
+import { useCompetitionData } from '@/src/hooks/useHealthData';
+import { Header } from '@/src/components/layout/Header';
 
 // Lazy load heavy components to prevent SSR issues
 import dynamic from 'next/dynamic';
@@ -64,27 +66,23 @@ export default function ClientDashboard() {
   const [selectedUser, setSelectedUser] = useState<'Bob' | 'Paula'>('Bob');
   const [dataError, setDataError] = useState<string | null>(null);
 
-  // Mock data for immediate display
-  const mockData = {
-    bobToday: 12,
-    paulaToday: 8,
-    bobStreak: 5,
-    paulaStreak: 3,
-    bobWeekly: 84,
-    paulaWeekly: 76,
-    weekLeader: 'Bob' as User,
-    isLoading: false,
-    error: null
-  };
+  // Use real competition data from hooks
+  const competitionData = useCompetitionData();
 
   return (
     <ErrorBoundary>
-      <div className="space-y-6">
+      <div className="min-h-screen bg-background">
+        <Header
+          selectedUser={selectedUser}
+          onUserChange={setSelectedUser}
+        />
+        <main className="container mx-auto px-4 py-6 md:px-8">
+          <div className="space-y-6">
         {/* Welcome Section */}
         <div className="text-center md:text-left">
           <h1 className="text-3xl font-bold">Dzień dobry! 💪</h1>
           <p className="text-muted-foreground mt-2">
-            Dzień 47 z 84 challenge. Keep pushing!
+            Dzień {Math.floor((new Date().getTime() - new Date('2024-09-15').getTime()) / (1000 * 60 * 60 * 24)) + 1} z 101 challenge. Keep pushing!
             <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
               ✓ App running at {typeof window !== 'undefined' ? window.location.hostname : 'health.konczak.io'}
             </span>
@@ -114,11 +112,11 @@ export default function ClientDashboard() {
               <span className="text-sm font-medium text-bob">Bob</span>
               <Trophy className="w-4 h-4 text-bob" />
             </div>
-            <p className="text-2xl font-bold">{mockData.bobToday} pkt</p>
+            <p className="text-2xl font-bold">{competitionData.bobToday} pkt</p>
             <p className="text-xs text-muted-foreground">Dziś</p>
             <div className="mt-2 flex items-center text-xs">
               <Flame className="w-3 h-3 mr-1 text-orange-500" />
-              <span>{mockData.bobStreak} dni streak</span>
+              <span>{competitionData.bobStreak} dni streak</span>
             </div>
           </div>
 
@@ -128,11 +126,11 @@ export default function ClientDashboard() {
               <span className="text-sm font-medium text-paula">Paula</span>
               <Trophy className="w-4 h-4 text-paula" />
             </div>
-            <p className="text-2xl font-bold">{mockData.paulaToday} pkt</p>
+            <p className="text-2xl font-bold">{competitionData.paulaToday} pkt</p>
             <p className="text-xs text-muted-foreground">Dziś</p>
             <div className="mt-2 flex items-center text-xs">
               <Flame className="w-3 h-3 mr-1 text-orange-500" />
-              <span>{mockData.paulaStreak} dni streak</span>
+              <span>{competitionData.paulaStreak} dni streak</span>
             </div>
           </div>
 
@@ -142,9 +140,9 @@ export default function ClientDashboard() {
               <span className="text-sm font-medium">Lider tygodnia</span>
               <Trophy className="w-4 h-4 text-gold" />
             </div>
-            <p className="text-2xl font-bold text-gold">{mockData.weekLeader}</p>
+            <p className="text-2xl font-bold text-gold">{competitionData.weekLeader}</p>
             <p className="text-xs text-muted-foreground">
-              {mockData.weekLeader === 'Bob' ? mockData.bobWeekly : mockData.paulaWeekly} pkt
+              {competitionData.weekLeader === 'Bob' ? competitionData.bobWeekly : competitionData.paulaWeekly} pkt
             </p>
           </div>
 
@@ -192,22 +190,24 @@ export default function ClientDashboard() {
               <div className="flex h-8 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
                 <div
                   className="bg-bob flex items-center justify-center text-white text-sm font-bold transition-all"
-                  style={{ width: `${(mockData.bobWeekly / (mockData.bobWeekly + mockData.paulaWeekly)) * 100}%` }}
+                  style={{ width: `${(competitionData.bobWeekly / (competitionData.bobWeekly + competitionData.paulaWeekly)) * 100}%` }}
                 >
-                  Bob: {mockData.bobWeekly}
+                  Bob: {competitionData.bobWeekly}
                 </div>
                 <div
                   className="bg-paula flex items-center justify-center text-white text-sm font-bold transition-all"
-                  style={{ width: `${(mockData.paulaWeekly / (mockData.bobWeekly + mockData.paulaWeekly)) * 100}%` }}
+                  style={{ width: `${(competitionData.paulaWeekly / (competitionData.bobWeekly + competitionData.paulaWeekly)) * 100}%` }}
                 >
-                  Paula: {mockData.paulaWeekly}
+                  Paula: {competitionData.paulaWeekly}
                 </div>
               </div>
             </div>
             <div className="text-center">
               <p className="text-sm">
-                <span className="text-bob font-semibold">Bob</span> prowadzi{' '}
-                <span className="font-semibold">+{mockData.bobWeekly - mockData.paulaWeekly} pkt</span>
+                <span className={`font-semibold ${competitionData.weekLeader === 'Bob' ? 'text-bob' : 'text-paula'}`}>
+                  {competitionData.weekLeader}
+                </span> prowadzi{' '}
+                <span className="font-semibold">+{Math.abs(competitionData.bobWeekly - competitionData.paulaWeekly)} pkt</span>
               </p>
             </div>
           </div>
@@ -260,20 +260,33 @@ export default function ClientDashboard() {
                 user={selectedUser}
                 onSave={async (data) => {
                   try {
+                    setDataError(null); // Clear any previous errors
+
                     const response = await fetch('/api/checklist', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(data),
                     });
 
+                    const result = await response.json();
+
                     if (!response.ok) {
-                      throw new Error('Failed to save checklist');
+                      throw new Error(result.error || 'Failed to save checklist');
                     }
 
-                    console.log('Checklist saved successfully');
+                    // Show success feedback
+                    setDataError(null);
+                    console.log('✅ Checklist saved successfully for', data.user, ':', result);
+
+                    // Optionally show a temporary success message
+                    setTimeout(() => {
+                      // This could be improved with a proper toast notification
+                    }, 2000);
+
                   } catch (error) {
-                    console.error('Error saving checklist:', error);
-                    setDataError('Failed to save checklist data');
+                    console.error('❌ Error saving checklist:', error);
+                    const errorMessage = error instanceof Error ? error.message : 'Failed to save checklist data';
+                    setDataError(`Save failed: ${errorMessage}`);
                   }
                 }}
               />
@@ -347,7 +360,9 @@ export default function ClientDashboard() {
             <TrendingUp className="w-4 h-4" />
             <span>Statystyki</span>
           </button>
-        </div>
+            </div>
+          </div>
+        </main>
       </div>
     </ErrorBoundary>
   );

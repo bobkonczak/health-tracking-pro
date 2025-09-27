@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { Header } from "@/src/components/layout/Header";
 import { Navigation } from "@/src/components/layout/Navigation";
 import "./globals.css";
 
@@ -29,10 +28,7 @@ export default function RootLayout({
         <div className="flex flex-col md:flex-row min-h-screen">
           <Navigation />
           <div className="flex-1 flex flex-col pb-16 md:pb-0">
-            <Header />
-            <main className="flex-1 container mx-auto px-4 py-6 md:px-8">
-              {children}
-            </main>
+            {children}
           </div>
         </div>
       </body>

@@ -1,10 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Bell } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { format } from 'date-fns';
+import { User } from '@/src/types';
 
-export function Header() {
+interface HeaderProps {
+  selectedUser?: User;
+  onUserChange?: (user: User) => void;
+}
+
+export function Header({ selectedUser = 'Bob', onUserChange }: HeaderProps) {
   const [darkMode, setDarkMode] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -38,13 +44,6 @@ export function Header() {
 
         <div className="flex items-center space-x-4">
           <button
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            aria-label="Notifications"
-          >
-            <Bell className="w-5 h-5" />
-          </button>
-
-          <button
             onClick={() => setDarkMode(!darkMode)}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             aria-label="Toggle dark mode"
@@ -57,13 +56,29 @@ export function Header() {
           </button>
 
           <div className="flex items-center space-x-2">
-            <div className="flex -space-x-2">
-              <div className="w-8 h-8 rounded-full bg-bob flex items-center justify-center text-white text-xs font-bold">
+            <div className="flex space-x-1">
+              <button
+                onClick={() => onUserChange?.('Bob')}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all ${
+                  selectedUser === 'Bob'
+                    ? 'bg-bob ring-2 ring-bob/50 ring-offset-2'
+                    : 'bg-bob/60 hover:bg-bob'
+                }`}
+                aria-label="Switch to Bob"
+              >
                 B
-              </div>
-              <div className="w-8 h-8 rounded-full bg-paula flex items-center justify-center text-white text-xs font-bold">
+              </button>
+              <button
+                onClick={() => onUserChange?.('Paula')}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all ${
+                  selectedUser === 'Paula'
+                    ? 'bg-paula ring-2 ring-paula/50 ring-offset-2'
+                    : 'bg-paula/60 hover:bg-paula'
+                }`}
+                aria-label="Switch to Paula"
+              >
                 P
-              </div>
+              </button>
             </div>
           </div>
         </div>
