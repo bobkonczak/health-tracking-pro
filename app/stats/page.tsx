@@ -5,7 +5,7 @@ import { Header } from '@/src/components/layout/Header';
 import {
   BarChart3, Calendar, TrendingUp, X, Check, Flame
 } from 'lucide-react';
-import { User, DailyEntry } from '@/src/types';
+import { DailyEntry } from '@/src/types';
 import { useHealthData } from '@/src/hooks/useHealthData';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { cn } from '@/src/lib/utils';
@@ -193,7 +193,7 @@ export default function EnhancedStatsPage() {
     // Only use real database entries - NO MOCK DATA
 
     return map;
-  }, [recentEntries, challengeDays, selectedUser]);
+  }, [recentEntries]);
 
   // Calculate statistics
   const stats = useMemo(() => {

@@ -7,7 +7,7 @@ import { DailyChecklist } from '@/src/components/checklist/DailyChecklist';
 import { useTheme } from '@/src/contexts/ThemeContext';
 
 export default function ChecklistPage() {
-  const { selectedUser, setSelectedUser, theme } = useTheme();
+  const { selectedUser, setSelectedUser } = useTheme();
 
   return (
     <div className="min-h-screen bg-background">

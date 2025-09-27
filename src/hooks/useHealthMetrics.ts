@@ -172,10 +172,10 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
       console.error('Health metrics fetch error:', error);
 
       // On error, fall back to mock data
-      setData(prev => ({
+      setData({
         ...getMockHealthMetrics(user),
         error: errorMessage
-      }));
+      });
     }
   }, [user]);
 

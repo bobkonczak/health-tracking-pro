@@ -65,19 +65,19 @@ export default function DashboardPage() {
             <div className="card p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Weight</span>
-                {healthMetrics.weight.trend < 0 ? (
+                {healthMetrics.weight.trend && healthMetrics.weight.trend < 0 ? (
                   <TrendingDown className="w-4 h-4 text-green-600" />
-                ) : (
+                ) : healthMetrics.weight.trend && healthMetrics.weight.trend > 0 ? (
                   <TrendingUp className="w-4 h-4 text-red-600" />
-                )}
+                ) : null}
               </div>
               <p className="text-2xl font-bold">{healthMetrics.weight.value}</p>
               <p className="text-xs text-muted-foreground">{healthMetrics.weight.unit}</p>
               <div className="mt-2">
                 <div className="flex justify-between text-xs">
                   <span>Target: {healthMetrics.weight.target}</span>
-                  <span className={healthMetrics.weight.trend < 0 ? 'text-green-600' : 'text-red-600'}>
-                    {healthMetrics.weight.trend > 0 ? '+' : ''}{healthMetrics.weight.trend}
+                  <span className={healthMetrics.weight.trend && healthMetrics.weight.trend < 0 ? 'text-green-600' : 'text-red-600'}>
+                    {healthMetrics.weight.trend ? (healthMetrics.weight.trend > 0 ? '+' : '') + healthMetrics.weight.trend : 'N/A'}
                   </span>
                 </div>
               </div>
@@ -112,7 +112,7 @@ export default function DashboardPage() {
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                   <div
                     className="bg-purple-600 h-1.5 rounded-full"
-                    style={{ width: `${(healthMetrics.muscleMass.value / healthMetrics.muscleMass.target) * 100}%` }}
+                    style={{ width: `${healthMetrics.muscleMass.target ? (healthMetrics.muscleMass.value / healthMetrics.muscleMass.target) * 100 : 0}%` }}
                   />
                 </div>
               </div>
@@ -125,12 +125,12 @@ export default function DashboardPage() {
                 <Footprints className="w-4 h-4 text-green-600" />
               </div>
               <p className="text-2xl font-bold">{healthMetrics.steps.value.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">/ {healthMetrics.steps.target.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">/ {healthMetrics.steps.target?.toLocaleString() || '10,000'}</p>
               <div className="mt-2">
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                   <div
                     className="bg-green-600 h-1.5 rounded-full"
-                    style={{ width: `${Math.min(100, (healthMetrics.steps.value / healthMetrics.steps.target) * 100)}%` }}
+                    style={{ width: `${Math.min(100, (healthMetrics.steps.value / (healthMetrics.steps.target || 10000)) * 100)}%` }}
                   />
                 </div>
               </div>
@@ -311,13 +311,13 @@ export default function DashboardPage() {
                     <div className="flex justify-between text-sm mb-1">
                       <span>Weight Target</span>
                       <span className="text-gray-400">
-                        {Math.abs(healthMetrics.weight.value - healthMetrics.weight.target).toFixed(1)} kg to go
+                        {healthMetrics.weight.target ? Math.abs(healthMetrics.weight.value - healthMetrics.weight.target).toFixed(1) : 'N/A'} kg to go
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div
                         className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${Math.max(0, 100 - Math.abs(healthMetrics.weight.value - healthMetrics.weight.target) * 5)}%` }}
+                        style={{ width: `${healthMetrics.weight.target ? Math.max(0, 100 - Math.abs(healthMetrics.weight.value - healthMetrics.weight.target) * 5) : 0}%` }}
                       />
                     </div>
                   </div>
