@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Tracking Pro - Test Checklist</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e5e5e5;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 8px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #60a5fa;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+        .test-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #1e1e1e;
+            border-radius: 6px;
+            border: 1px solid #404040;
+        }
+        .test-item:hover {
+            border-color: #525252;
+        }
+        .checkbox {
+            margin-right: 12px;
+            margin-top: 2px;
+            width: 18px;
+            height: 18px;
+            accent-color: #10b981;
+        }
+        .test-content {
+            flex: 1;
+        }
+        .test-label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #f3f4f6;
+        }
+        .comment-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #404040;
+            border-radius: 4px;
+            background: #1a1a1a;
+            color: #e5e5e5;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 60px;
+        }
+        .comment-input:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+        }
+        .progress {
+            margin: 20px 0;
+            padding: 15px;
+            background: #1e1e1e;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #404040;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #059669);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .export-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .export-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 10px;
+        }
+        .export-btn:hover {
+            background: #2563eb;
+        }
+        .critical { border-left-color: #ef4444; }
+        .important { border-left-color: #f59e0b; }
+        .nice-to-have { border-left-color: #10b981; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Health Tracking Pro - Test Checklist</h1>
+        <p>Systematyczne testowanie funkcjonalności health.konczak.io</p>
+        <div class="progress">
+            <div>Postęp testów: <span id="progress-text">0/0 (0%)</span></div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section critical">
+        <h3>🔴 KRYTYCZNE - Podstawowe funkcje</h3>
+        
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="app-loads">
+            <div class="test-content">
+                <div class="test-label">Aplikacja ładuje się bez błędów 404/500</div>
+                <textarea class="comment-input" placeholder="Komentarz: Czy strona się otwiera, czy są błędy w konsoli..."></textarea>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="dashboard-data">
+            <div class="test-content">
+                <div class="test-label">Dashboard wyświetla dane (prawdziwe z Supabase vs mock)</div>
+                <textarea class="comment-input" placeholder="Komentarz: Czy widzisz prawdziwe dane z Withings, czy nadal mock data..."></textarea>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="user-switching">
+            <div class="test-content">
+                <div class="test-label">Przełączanie Bob/Paula działa niezależnie</div>
+                <textarea class="comment-input" placeholder="Komentarz: Czy checkboxy się nie synchronizują między użytkownikami..."></textarea>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="date-time">
+            <div class="test-content">
+                <div class="test-label">Data i czas wyświetlają się poprawnie</div>
+                <textarea class="comment-input" placeholder="Komentarz: Czy pokazuje właściwą datę i dzień challenge..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="section important">
+        <h3>🟡 WAŻNE - Daily Checklist</h3>
+        
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="bob-checklist">
+            <div class="test-content">
+                <div class="test-label">Bob's Checklist otwiera się i działa</div>
+                <textarea class="comment-input" placeholder="Komentarz: Czy wszystkie checkboxy są widoczne i działają..."></textarea>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="paula-checklist">
+            <div class="test-content">
+                <div class="test-label">Paula's Checklist otwiera się i działa</div>
+                <textarea class="comment-input" placeholder="Komentarz: Czy lista jest niezależna od Bob..."></textarea>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="checkboxes">
+            <div class="test-content">
+                <div class="test-label">Checkboxy dają się zaznaczać/odznaczać</div>
+                <textarea class="comment-input" placeholder="Komentarz: Czy stan się zapisuje, czy są problemy z klikaniem..."></textarea>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="fasting-picker">
+            <div class="test-content">
+                <div class="test-label">Fasting time picker działa</div>
+                <textarea class="comment-input" placeholder="Komentarz: Czy można ustawić czas, czy kalkuluje punkty..."></textarea>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="save-checklist">
+            <div class="test-content">
+                <div class="test-label">Zapisywanie checklisty do Supabase</div>
+                <textarea class="comment-input" placeholder="Komentarz: Czy dane się zapisują, czy jest komunikat o sukcesie..."></textarea>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="points-calculation">
+            <div class="test-content">
+                <div class="test-label">Punkty kalkulują się poprawnie</div>
+                <textarea class="comment-input" placeholder="Komentarz: Czy suma punktów się zgadza z zaznaczonymi items..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="section important">
+        <h3>🟡 WAŻNE - Competition & Navigation</h3>
+        
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="competition-view">
+            <div class="test-content">
+                <div class="test-label">Tygodniowa rywalizacja wyświetla się</div>
+                <textarea class="comment-input" placeholder="Komentarz: Czy progress bar działa, czy punkty się aktualizują..."></textarea>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="navigation-links">
+            <div class="test-content">
+                <div class="test-label">Menu navigation (Dashboard, Checklist, Competition, Stats, etc.)</div>
+                <textarea class="comment-input" placeholder="Komentarz: Które linki działają, które zwracają 404..."></textarea>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="stats-charts">
+            <div class="test-content">
+                <div class="test-label">Stats/Charts sekcja</div>
+                <textarea class="comment-input" placeholder="Komentarz: Czy wykresy się ładują, czy dane są poprawne..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="section nice-to-have">
+        <h3>🟢 NICE-TO-HAVE - Data Integration & Mobile</h3>
+        
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="withings-data">
+            <div class="test-content">
+                <div class="test-label">Dane z Withings/Supabase wyświetlają się poprawnie</div>
+                <textarea class="comment-input" placeholder="Komentarz: Czy waga, kroki, body fat są aktualne..."></textarea>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="mobile-responsive">
+            <div class="test-content">
+                <div class="test-label">Mobile responsiveness</div>
+                <textarea class="comment-input" placeholder="Komentarz: Jak wygląda na telefonie, czy menu działa..."></textarea>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <input type="checkbox" class="checkbox" id="auto-updates">
+            <div class="test-content">
+                <div class="test-label">Automatyczne aktualizacje z Pipedream</div>
+                <textarea class="comment-input" placeholder="Komentarz: Czy dane się aktualizują automatycznie..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="export-section">
+        <h3>Export wyników testów</h3>
+        <p>Po zakończeniu testów możesz wyeksportować wyniki:</p>
+        <button class="export-btn" onclick="exportResults()">📋 Kopiuj do schowka</button>
+        <button class="export-btn" onclick="exportToFile()">💾 Pobierz jako plik</button>
+    </div>
+
+    <script>
+        // Progress tracking
+        function updateProgress() {
+            const checkboxes = document.querySelectorAll('.checkbox');
+            const checked = document.querySelectorAll('.checkbox:checked');
+            const total = checkboxes.length;
+            const completed = checked.length;
+            const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+            
+            document.getElementById('progress-text').textContent = `${completed}/${total} (${percentage}%)`;
+            document.getElementById('progress-fill').style.width = `${percentage}%`;
+        }
+
+        // Add event listeners to checkboxes
+        document.querySelectorAll('.checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', updateProgress);
+        });
+
+        // Export functions
+        function exportResults() {
+            const results = [];
+            const sections = document.querySelectorAll('.section');
+            
+            sections.forEach(section => {
+                const title = section.querySelector('h3').textContent;
+                results.push(`\n${title}\n${'='.repeat(50)}`);
+                
+                const items = section.querySelectorAll('.test-item');
+                items.forEach(item => {
+                    const checkbox = item.querySelector('.checkbox');
+                    const label = item.querySelector('.test-label').textContent;
+                    const comment = item.querySelector('.comment-input').value;
+                    const status = checkbox.checked ? '✅' : '❌';
+                    
+                    results.push(`${status} ${label}`);
+                    if (comment.trim()) {
+                        results.push(`   Komentarz: ${comment}`);
+                    }
+                    results.push('');
+                });
+            });
+            
+            const text = results.join('\n');
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Wyniki skopiowane do schowka!');
+            });
+        }
+
+        function exportToFile() {
+            const results = exportResults();
+            const blob = new Blob([results], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `health-tracking-test-results-${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize progress on load
+        updateProgress();
+    </script>
+</body>
+</html>
