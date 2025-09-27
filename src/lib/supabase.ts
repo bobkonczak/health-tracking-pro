@@ -264,7 +264,7 @@ export async function createBodyMetric(metric: Omit<BodyMetric, 'id' | 'created_
 
   try {
     const { data, error } = await supabase!
-      .from('body_metrics')
+      .from('health_metrics')
       .insert([metric])
       .select()
       .single();

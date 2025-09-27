@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     // Insert or update health metrics
     const { data: healthData, error: healthError } = await supabase!
-      .from('body_metrics')
+      .from('health_metrics')
       .upsert([healthMetricData], {
         onConflict: 'date,user_name',
         ignoreDuplicates: false
@@ -226,7 +226,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch health metrics
     const { data: healthMetrics, error: healthError } = await supabase!
-      .from('body_metrics')
+      .from('health_metrics')
       .select('*')
       .eq('user_name', user)
       .gte('date', startDateStr)
