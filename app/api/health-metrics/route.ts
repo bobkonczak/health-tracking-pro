@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     // Process health data - prioritize records with complete data
     // Use the most recent record that has the most complete data
-    const findBestRecord = (records: any[], field: string) => {
+    const findBestRecord = (records: Record<string, unknown>[], field: string) => {
       // First try to find the most recent record with this field
       for (const record of records) {
         if (record[field] !== null && record[field] !== undefined) {
