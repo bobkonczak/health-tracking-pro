@@ -57,9 +57,28 @@ export async function GET(request: NextRequest) {
       console.warn('⚠️ No user profile found, using default targets');
     }
 
-    // Process health data - use most recent data
+    // Process health data - prioritize records with complete data
+    // Use the most recent record that has the most complete data
+    const findBestRecord = (records: any[], field: string) => {
+      // First try to find the most recent record with this field
+      for (const record of records) {
+        if (record[field] !== null && record[field] !== undefined) {
+          return record[field];
+        }
+      }
+      return null;
+    };
+
     const latestData = healthData?.[0];
     const previousData = healthData?.[1];
+
+    // Create a composite data object with the best available data for each metric
+    const compositeData = {
+      ...latestData,
+      steps: findBestRecord(healthData, 'steps'),
+      heart_rate: findBestRecord(healthData, 'heart_rate'),
+      sleep_score: findBestRecord(healthData, 'sleep_score')
+    };
 
     if (!latestData) {
       console.error(`❌ NO HEALTH DATA FOUND for ${user}`);
@@ -80,6 +99,7 @@ export async function GET(request: NextRequest) {
       heart_rate: latestData.heart_rate,
       steps: latestData.steps
     });
+
 
     // Calculate trends (latest vs previous)
     const calculateTrend = (current: number | null, previous: number | null): number | undefined => {
@@ -141,16 +161,16 @@ export async function GET(request: NextRequest) {
         calculateTrend(latestData.visceral_fat, previousData?.visceral_fat)
       ),
       steps: createHealthMetric(
-        latestData.steps,
+        compositeData.steps,
         'steps',
         10000
       ),
       heartRate: createHealthMetric(
-        latestData.heart_rate,
+        compositeData.heart_rate,
         'bpm'
       ),
       sleepScore: createHealthMetric(
-        latestData.sleep_score,
+        compositeData.sleep_score,
         '/100'
       ),
       unknownType91: createHealthMetric(
@@ -167,7 +187,6 @@ export async function GET(request: NextRequest) {
     };
 
     console.log('✅ HEALTH METRICS SUCCESSFULLY PROCESSED');
-    console.log('🔍 BODY FAT METRIC BEING RETURNED:', JSON.stringify(healthMetrics.bodyFat, null, 2));
 
     return NextResponse.json({
       success: true,
