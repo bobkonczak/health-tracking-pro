@@ -75,11 +75,6 @@ export function useHealthMetrics(user: User): HealthMetrics & { refetch: () => P
       }
 
       console.log(`✅ HEALTH METRICS FETCHED successfully for ${user}`);
-      console.log('📊 Data:', {
-        weight: result.data.weight.value,
-        bodyFat: result.data.bodyFat.value,
-        hasData: result.data.weight.hasData && result.data.bodyFat.hasData
-      });
 
       setData({
         ...result.data,

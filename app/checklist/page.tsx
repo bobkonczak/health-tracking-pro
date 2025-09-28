@@ -1,28 +1,77 @@
 'use client';
 
-import React from 'react';
-import { CheckSquare, Flame } from 'lucide-react';
-import { Header } from '@/src/components/layout/Header';
+import React, { useEffect, useState, Suspense } from 'react';
+import { CheckSquare, Flame, ArrowLeft, Calendar } from 'lucide-react';
 import { DailyChecklist } from '@/src/components/checklist/DailyChecklist';
 import { useTheme } from '@/src/contexts/ThemeContext';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
-export default function ChecklistPage() {
+function ChecklistContent() {
   const { selectedUser, setSelectedUser } = useTheme();
+  const searchParams = useSearchParams();
+  const [targetDate, setTargetDate] = useState<string | null>(null);
+  const [historicalMode, setHistoricalMode] = useState(false);
+
+  useEffect(() => {
+    const dateParam = searchParams.get('date');
+    const userParam = searchParams.get('user');
+
+    if (dateParam) {
+      setTargetDate(dateParam);
+      setHistoricalMode(true);
+    }
+
+    if (userParam && (userParam === 'Bob' || userParam === 'Paula')) {
+      setSelectedUser(userParam);
+    }
+  }, [searchParams, setSelectedUser]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header selectedUser={selectedUser} onUserChange={setSelectedUser} />
-
-      <main className="container mx-auto px-4 py-6 md:px-8">
+    <main className="container mx-auto px-4 py-6 md:px-8">
         <div className="max-w-4xl mx-auto space-y-6">
+          {/* Historical Mode Banner */}
+          {historicalMode && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Calendar className="w-5 h-5 mr-2 text-blue-600" />
+                  <div>
+                    <h3 className="font-semibold text-blue-800 dark:text-blue-200">
+                      Historical Entry Mode
+                    </h3>
+                    <p className="text-sm text-blue-600 dark:text-blue-300">
+                      Editing checklist for {new Date(targetDate!).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/stats"
+                  className="flex items-center px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  Back to Stats
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* Page Header */}
           <div>
             <h1 className="text-3xl font-bold flex items-center">
               <CheckSquare className="w-8 h-8 mr-3" />
-              Daily Checklist
+              {historicalMode ? 'Historical' : 'Daily'} Checklist
             </h1>
             <p className="text-muted-foreground mt-2">
-              Complete your daily tasks to earn points and maintain your streak
+              {historicalMode
+                ? 'Add or edit tasks for this historical date'
+                : 'Complete your daily tasks to earn points and maintain your streak'
+              }
             </p>
           </div>
 
@@ -54,6 +103,7 @@ export default function ChecklistPage() {
           <div className="card p-6">
             <DailyChecklist
               user={selectedUser}
+              date={targetDate ? new Date(targetDate) : new Date()}
               onSave={async (data) => {
                 const response = await fetch('/api/checklist', {
                   method: 'POST',
@@ -84,6 +134,25 @@ export default function ChecklistPage() {
           </div>
         </div>
       </main>
-    </div>
+  );
+}
+
+export default function ChecklistPage() {
+  return (
+    <Suspense fallback={
+      <main className="container mx-auto px-4 py-6 md:px-8">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold flex items-center justify-center">
+              <CheckSquare className="w-8 h-8 mr-3" />
+              Daily Checklist
+            </h1>
+            <p className="text-muted-foreground mt-2">Loading...</p>
+          </div>
+        </div>
+      </main>
+    }>
+      <ChecklistContent />
+    </Suspense>
   );
 }

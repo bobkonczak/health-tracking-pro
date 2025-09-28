@@ -78,8 +78,8 @@ export function HistoricalDataTable({ data, title = "Historical Data Records" }:
     return `${value.toFixed(decimals)}${unit}`;
   };
 
-  const getTrendIcon = (current: number | null, previous: number | null) => {
-    if (!current || !previous) return null;
+  const getTrendIcon = (current: number | null | undefined, previous: number | null | undefined) => {
+    if (!current || !previous || current === null || previous === null) return null;
     return current > previous ?
       <TrendingUp className="w-3 h-3 text-green-500" /> :
       <TrendingDown className="w-3 h-3 text-red-500" />;

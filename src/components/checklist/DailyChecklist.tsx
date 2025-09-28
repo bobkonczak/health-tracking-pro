@@ -208,9 +208,16 @@ interface DailyChecklistProps {
 }
 
 export function DailyChecklist({ user, date = new Date(), onSave }: DailyChecklistProps) {
+  // Determine if we're in historical mode
+  const isToday = date.toDateString() === new Date().toDateString();
+
   // Load user-specific data and health metrics
   const { todayEntry, streak, isLoading } = useHealthData(user);
   const healthMetrics = useHealthMetrics(user);
+
+  // For historical dates, we'll need to fetch specific date data
+  const [historicalEntry, setHistoricalEntry] = useState<DailyEntry | null>(null);
+  const [historicalLoading, setHistoricalLoading] = useState(false);
 
   const [checklist, setChecklist] = useState({
     noSugar: false,
@@ -231,15 +238,42 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [saveMessage, setSaveMessage] = useState<string>('');
 
+  // Fetch historical data if not today
+  useEffect(() => {
+    if (!isToday) {
+      setHistoricalLoading(true);
+      const dateStr = date.toISOString().split('T')[0];
+
+      fetch(`/api/checklist?date=${dateStr}&user=${user}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data) {
+            setHistoricalEntry(data.data);
+          } else {
+            setHistoricalEntry(null);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching historical data:', error);
+          setHistoricalEntry(null);
+        })
+        .finally(() => {
+          setHistoricalLoading(false);
+        });
+    }
+  }, [isToday, date, user]);
+
   // Update checklist when user changes or data loads
   useEffect(() => {
-    if (todayEntry) {
-      // Load existing data for this user
+    const currentEntry = isToday ? todayEntry : historicalEntry;
+
+    if (currentEntry) {
+      // Load existing data for this user/date
       setChecklist({
-        ...todayEntry.checklist,
-        fastingTime: todayEntry.checklist.fastingTime || '',
-        trainingDescription: todayEntry.checklist.trainingDescription || '',
-        caloriesDescription: todayEntry.checklist.caloriesDescription || ''
+        ...currentEntry.checklist,
+        fastingTime: currentEntry.checklist.fastingTime || '',
+        trainingDescription: currentEntry.checklist.trainingDescription || '',
+        caloriesDescription: currentEntry.checklist.caloriesDescription || ''
       });
     } else {
       // Reset to empty state for new user or no data
@@ -259,7 +293,7 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
         caloriesDescription: '',
       });
     }
-  }, [user, todayEntry]);
+  }, [user, todayEntry, historicalEntry, isToday]);
 
   // Auto-populate health metrics (steps and weight) from database
   useEffect(() => {
@@ -321,7 +355,7 @@ export function DailyChecklist({ user, date = new Date(), onSave }: DailyCheckli
   };
 
   // Show loading state while fetching user data
-  if (isLoading) {
+  if (isLoading || (!isToday && historicalLoading)) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-3 gap-4">

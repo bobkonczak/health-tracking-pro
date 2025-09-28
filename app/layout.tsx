@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Sidebar } from "@/src/components/layout/Sidebar";
+import { MobileNavigation } from "@/src/components/layout/MobileNavigation";
 import { PWAWrapper } from "@/src/components/PWAWrapper";
 import { ThemeProvider } from "@/src/contexts/ThemeContext";
 import "./globals.css";
@@ -47,13 +48,18 @@ export default function RootLayout({
         <ThemeProvider>
           <PWAWrapper>
             <div className="flex min-h-screen">
-              {/* Sidebar Navigation */}
-              <div className="hidden md:flex md:w-64 md:flex-col">
+              {/* Desktop Sidebar Navigation */}
+              <div className="hidden lg:flex lg:w-64 lg:flex-col">
                 <Sidebar />
               </div>
 
               {/* Main Content Area */}
               <div className="flex-1 flex flex-col">
+                {/* Mobile & Tablet Navigation */}
+                <div className="lg:hidden">
+                  <MobileNavigation />
+                </div>
+
                 {children}
               </div>
             </div>

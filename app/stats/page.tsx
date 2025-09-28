@@ -13,8 +13,8 @@ import { HistoricalHealthData } from '@/src/components/stats/HistoricalHealthDat
 
 // Generate all days in the challenge period
 function generateChallengeDays() {
-  const startDate = new Date('2024-09-15');
-  const endDate = new Date('2024-12-24');
+  const startDate = new Date('2025-09-15');
+  const endDate = new Date('2025-12-24');
   const days = [];
 
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
@@ -234,8 +234,11 @@ export default function EnhancedStatsPage() {
   };
 
   const handleEditDay = () => {
-    // TODO: Implement edit functionality
-    console.log('Edit day:', selectedDate);
+    if (!selectedDate) return;
+
+    // Navigate to checklist page with date parameter for historical entry
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    window.location.href = `/checklist?date=${dateStr}&user=${selectedUser}`;
   };
 
   return (
@@ -252,7 +255,7 @@ export default function EnhancedStatsPage() {
                 Statistics & History
               </h1>
               <p className="text-muted-foreground mt-2">
-                101-day challenge: Sep 15 - Dec 24, 2024
+                101-day challenge: Sep 15 - Dec 24, 2025
               </p>
             </div>
             <div className="flex space-x-2">
@@ -348,7 +351,7 @@ export default function EnhancedStatsPage() {
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1">
               {/* Add empty cells for alignment */}
-              {[...Array(new Date('2024-09-15').getDay() === 0 ? 6 : new Date('2024-09-15').getDay() - 1)].map((_, i) => (
+              {[...Array(new Date('2025-09-15').getDay() === 0 ? 6 : new Date('2025-09-15').getDay() - 1)].map((_, i) => (
                 <div key={`empty-${i}`} className="aspect-square" />
               ))}
 

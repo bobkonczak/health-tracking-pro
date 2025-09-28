@@ -203,7 +203,7 @@ export function HistoricalHealthData({ user }: HistoricalHealthDataProps) {
   const [dateRange, setDateRange] = useState<'all' | '90d' | '30d'>('all');
   const { data, summary, chartData, isLoading, error } = useHealthHistory(
     user,
-    dateRange === 'all' ? '2024-09-15' :
+    dateRange === 'all' ? '2025-09-15' :
     dateRange === '90d' ? new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] :
     new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
@@ -246,7 +246,7 @@ export function HistoricalHealthData({ user }: HistoricalHealthDataProps) {
               Historical Health Data
             </h2>
             <p className="text-muted-foreground mt-1">
-              Health metrics from September 15, 2024 onwards
+              Health metrics from September 15, 2025 onwards
             </p>
           </div>
 

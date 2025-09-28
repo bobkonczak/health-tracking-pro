@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Header } from '@/src/components/layout/Header';
 import {
   TrendingUp, TrendingDown, Activity, Flame, Award,
   Heart, Footprints, Moon, BarChart3
@@ -17,6 +16,8 @@ export default function DashboardPage() {
   const competitionData = useCompetitionData();
   const healthMetrics = useHealthMetrics(selectedUser);
 
+
+
   const todayPoints = selectedUser === 'Bob' ? competitionData.bobToday : competitionData.paulaToday;
   const weeklyPoints = selectedUser === 'Bob' ? competitionData.bobWeekly : competitionData.paulaWeekly;
 
@@ -30,9 +31,7 @@ export default function DashboardPage() {
   // Show loading state while fetching health metrics
   if (healthMetrics.isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header selectedUser={selectedUser} onUserChange={setSelectedUser} />
-        <main className="container mx-auto px-4 py-6 md:px-8">
+      <main className="container mx-auto px-4 py-6 md:px-8">
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold">Health Dashboard</h1>
@@ -49,15 +48,11 @@ export default function DashboardPage() {
             </div>
           </div>
         </main>
-      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header selectedUser={selectedUser} onUserChange={setSelectedUser} />
-
-      <main className="container mx-auto px-4 py-6 md:px-8">
+    <main className="container mx-auto px-4 py-6 md:px-8">
         <div className="space-y-6">
           {/* Dashboard Header */}
           <div>
@@ -114,7 +109,7 @@ export default function DashboardPage() {
                 <Activity className="w-4 h-4 text-blue-600" />
               </div>
               <p className="text-2xl font-bold">
-                {healthMetrics.bodyFat.hasData ? healthMetrics.bodyFat.value : 'No data'}
+                {healthMetrics.bodyFat.hasData ? `${healthMetrics.bodyFat.value}%` : 'No data'}
               </p>
               <p className="text-xs text-muted-foreground">
                 {healthMetrics.bodyFat.hasData ? healthMetrics.bodyFat.unit : 'Not available'}
@@ -392,6 +387,5 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
-    </div>
   );
 }

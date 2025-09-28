@@ -167,6 +167,7 @@ export async function GET(request: NextRequest) {
     };
 
     console.log('✅ HEALTH METRICS SUCCESSFULLY PROCESSED');
+    console.log('🔍 BODY FAT METRIC BEING RETURNED:', JSON.stringify(healthMetrics.bodyFat, null, 2));
 
     return NextResponse.json({
       success: true,

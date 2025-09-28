@@ -22,7 +22,7 @@ export default function CompetitionPage() {
               🏆 Rywalizacja
             </h1>
             <p className="text-muted-foreground mt-2">
-              Bob vs Paula - challenge 15 września - 24 grudnia 2024
+              Bob vs Paula - challenge 15 września - 24 grudnia 2025
             </p>
           </div>
 
@@ -288,13 +288,13 @@ export default function CompetitionPage() {
               <div className="text-center">
                 <Clock className="w-8 h-8 mx-auto mb-2 text-green-600" />
                 <p className="font-semibold">Start</p>
-                <p className="text-sm text-muted-foreground">15 września 2024</p>
+                <p className="text-sm text-muted-foreground">15 września 2025</p>
               </div>
 
               <div className="text-center">
                 <Target className="w-8 h-8 mx-auto mb-2 text-red-600" />
                 <p className="font-semibold">Koniec</p>
-                <p className="text-sm text-muted-foreground">24 grudnia 2024</p>
+                <p className="text-sm text-muted-foreground">24 grudnia 2025</p>
               </div>
 
               <div className="text-center">
